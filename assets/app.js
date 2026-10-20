@@ -17,11 +17,11 @@
       verifiees: "automatically verified", manquantes: "missing", aRelire: "to review",
       legendeVerifie: "Automatically verified (accounting checks)", legendeRelire: "To review", legendeRetraite: "Later restated by the company", legendeManquant: "Missing (reason given)",
       aideCellule: "Tap a value to see its document, page, original label and checks.",
-      uniteNote: "Amounts in thousands of Tunisian dinars (TND), as in the published statements. Ratios in %.",
+      uniteNote: "Amounts in thousands of each company's own reporting currency (shown next to the company), as in the published statements. Ratios in %.",
       rienAAfficher: "Choose at least one company, one year and one variable.",
       entreprise: "Company", annee: "Year",
       etapeTelecharger: "Download", telechargerExcel: "Excel (my selection)", telechargerCsv: "CSV long format (my selection)",
-      aideTelechargement: "The Excel file has 4 sheets: panel (one row per company-year), long format with the quality of each value, codebook, and dataset version. Amounts are in dinars (not thousands).",
+      aideTelechargement: "The Excel file has 4 sheets: panel (one row per company-year), long format with the quality of each value, codebook, and dataset version. Amounts are in units of each company's reporting currency (not thousands); the currency is given on every row.",
       jeuComplet: "Full dataset (Excel and Stata)", mesSelections: "My saved selections", nomSelection: "Selection name",
       enregistrer: "Save selection", enregistree: "Selection saved: ", ouvrir: "Open", supprimer: "Delete", aucuneSelection: "No selection saved on this device.",
       piedSources: "Sources: official documents published by the companies (financial statements, annual reports). The documents themselves are not distributed; each value links to the official page.",
@@ -32,8 +32,17 @@
       sVerifie: "automatically verified", sRelire: "to review", sAttente: "awaiting checks", sManquant: "missing", sHumain: "human verified",
       oAnnee: "financial statements of the year", oSuivant: "“previous year” column of the following year's report", oCalcul: "calculated from the values above",
       rLigne: "line not present in the published statement", rRapport: "document for the year not collected", rCalcul: "a value needed for the calculation is missing",
-      avDevise: "All values are in Tunisian dinars (TND); no currency conversion is applied.",
-      avReferentiel: "Framework: Tunisian GAAP (NCT). Compare with care to IFRS reporters.",
+      avDevise: "Values are in each company's own reporting currency ({x}); no currency conversion is applied.",
+      avReferentiel: "Accounting frameworks in this selection: {x}. Compare with care across frameworks.",
+      tousPays: "All countries",
+      etapeRegistre: "World register of Islamic banks",
+      aideRegistre: "Every Islamic bank found on the official lists of central banks and regulators, with the progress of the collection. Banks with figures appear in step 1.",
+      rechercheRegistre: "Search the register (bank, country, regulator)…",
+      rBanques: "Islamic banks registered", rPays: "countries", rCollectees: "with documents collected", rDonnees: "with figures in the database",
+      rListe: "official list", rCotee: "listed", rNonCotee: "not listed", rFenetre: "Islamic window", rFiliale: "Islamic subsidiary",
+      rStatutDonnees: "figures available", rStatutDocs: "documents collected, extraction pending", rStatutAttente: "documents not yet collected",
+      rStatutSanctions: "collection deferred (sanctions check)", rAnnees: "years",
+      rNA: "not applicable to this type of company",
       avRetraite: "Some values were restated by the company the following year: the original value is kept, the restated value is shown next to it.",
       avRelire: "Some values are “to review”: they did not pass all automatic checks.",
       ouvrirDocument: "open the official page"
@@ -66,11 +75,17 @@
   function nomFamille(f) { return (NOMS_FAMILLES[langue] || {})[f] || f; }
 
   // ----- état de la sélection
+  // default selection: the companies with the most verified values (at most 6, so the preview stays readable)
+  var nbVerifiees = {};
+  D.observations.forEach(function (o) { if (o[C.statut] === "verifie_auto") nbVerifiees[o[C.entite]] = (nbVerifiees[o[C.entite]] || 0) + 1; });
+  var parDefaut = D.entites.map(function (e) { return e.code; }).sort(function (a, b) { return (nbVerifiees[b] || 0) - (nbVerifiees[a] || 0) || (a < b ? -1 : 1); }).slice(0, 6);
+  var entitesParCode = {}; D.entites.forEach(function (e) { entitesParCode[e.code] = e; });
   var etat = {
-    entites: D.entites.map(function (e) { return e.code; }),
+    entites: parDefaut,
     perimetre: "consolide",
     annees: toutesAnnees.slice(-5),
-    variables: ["BS.TOTAL_ASSETS", "BS.LOANS_CUSTOMERS", "BS.DEPOSITS_CUSTOMERS", "BS.TOTAL_EQUITY", "IS.NET_BANKING_INCOME", "IS.NET_INCOME", "RATIO.ROA", "RATIO.ROE"],
+    variables: ["BS.TOTAL_ASSETS", "BS.LOANS_CUSTOMERS", "BS.FINANCING_CUSTOMERS", "BS.DEPOSITS_CUSTOMERS", "BS.TOTAL_EQUITY", "IS.NET_INCOME", "RATIO.ROA", "RATIO.ROE"],
+    pays: [],
     ouvertes: {}
   };
 
@@ -88,7 +103,7 @@
   D.entites.forEach(function (e) { clesEntites[e.code] = sonRecherche.cle([e.sigle, e.nom.fr, e.nom.en, e.nom.ar, e.code].join(" ")); });
   function dessinerEntites() {
     var q = $("recherche").value, boite = $("liste-entites"); boite.textContent = "";
-    var trouvees = D.entites.filter(function (e) { return sonRecherche.trouve(clesEntites[e.code], q); });
+    var trouvees = D.entites.filter(function (e) { return sonRecherche.trouve(clesEntites[e.code], q) && (!etat.pays.length || etat.pays.indexOf(e.pays) >= 0); });
     trouvees.forEach(function (e) {
       var choisie = etat.entites.indexOf(e.code) >= 0;
       var case_ = el("input", { type: "checkbox", id: "e-" + e.code }); case_.checked = choisie;
@@ -96,12 +111,40 @@
         etat.entites = case_.checked ? etat.entites.concat([e.code]) : etat.entites.filter(function (x) { return x !== e.code; });
         dessinerEntites(); dessinerApercu();
       });
-      var nom = langue === "en" ? e.nom.en : e.nom.fr;
+      var nom = e.nom.en || e.nom.fr;
       boite.appendChild(el("label", { classe: "carte-entite" + (choisie ? " choisie" : ""), "for": "e-" + e.code }, [case_,
         el("div", {}, [el("div", { classe: "titre", texte: e.sigle + " — " + nom }),
-          el("div", { classe: "infos", texte: [e.nom.ar, e.pays, e.devise, e.referentiel].join(" · ") })])]));
+          el("div", { classe: "infos", texte: [e.nom.ar, nomPays(e.pays), e.devise, e.referentiel].filter(Boolean).join(" · ") })])]));
     });
     $("aucune-entite").hidden = trouvees.length > 0;
+  }
+
+  // country filter (chips): only the countries that have companies with figures
+  var NOMS_PAYS = { AE: "United Arab Emirates", BH: "Bahrain", BD: "Bangladesh", BN: "Brunei", DZ: "Algeria", EG: "Egypt", GB: "United Kingdom",
+    ID: "Indonesia", IQ: "Iraq", JO: "Jordan", KE: "Kenya", KW: "Kuwait", LB: "Lebanon", MA: "Morocco", MY: "Malaysia", NG: "Nigeria", OM: "Oman",
+    PK: "Pakistan", PS: "Palestine", QA: "Qatar", SA: "Saudi Arabia", SD: "Sudan", TN: "Tunisia", TR: "Türkiye", YE: "Yemen", IR: "Iran",
+    SY: "Syria", DE: "Germany", MV: "Maldives", LK: "Sri Lanka", AF: "Afghanistan", TH: "Thailand", PH: "Philippines", SG: "Singapore",
+    LY: "Libya", MR: "Mauritania", DJ: "Djibouti", SN: "Senegal", NE: "Niger", GM: "Gambia", KZ: "Kazakhstan", KG: "Kyrgyzstan",
+    AZ: "Azerbaijan", BA: "Bosnia and Herzegovina", TZ: "Tanzania", ET: "Ethiopia", SO: "Somalia", UG: "Uganda", GH: "Ghana", ZA: "South Africa",
+    LU: "Luxembourg", FR: "France", TJ: "Tajikistan", UZ: "Uzbekistan", MU: "Mauritius", CM: "Cameroon", ML: "Mali", BF: "Burkina Faso",
+    GN: "Guinea", CI: "Côte d'Ivoire", TG: "Togo", BJ: "Benin", SL: "Sierra Leone", LR: "Liberia", KM: "Comoros", RU: "Russia", US: "United States", CA: "Canada", AU: "Australia" };
+  function nomPays(c) { return NOMS_PAYS[c] || c; }
+  function dessinerPays() {
+    var boite = $("pays"); boite.textContent = "";
+    var liste = Array.from(new Set(D.entites.map(function (e) { return e.pays; }))).sort(function (a, b) { return nomPays(a) < nomPays(b) ? -1 : 1; });
+    if (liste.length < 2) { boite.hidden = true; return; }
+    var tous = el("button", { type: "button", classe: "puce", "aria-pressed": String(!etat.pays.length), texte: t("tousPays") });
+    tous.addEventListener("click", function () { etat.pays = []; dessinerPays(); dessinerEntites(); });
+    boite.appendChild(tous);
+    liste.forEach(function (c) {
+      var n = D.entites.filter(function (e) { return e.pays === c; }).length;
+      var b = el("button", { type: "button", classe: "puce", "aria-pressed": String(etat.pays.indexOf(c) >= 0), texte: nomPays(c) + " (" + n + ")" });
+      b.addEventListener("click", function () {
+        etat.pays = etat.pays.indexOf(c) >= 0 ? etat.pays.filter(function (x) { return x !== c; }) : etat.pays.concat([c]);
+        dessinerPays(); dessinerEntites();
+      });
+      boite.appendChild(b);
+    });
   }
 
   // ----- 2. comptes
@@ -192,7 +235,13 @@
       r.appendChild(el("div", { classe: "tuile" }, [el("div", { classe: "chiffre", texte: String(x[0]) }), el("div", { classe: "quoi", texte: x[1] })]));
     });
     var av = $("avertissements"); av.textContent = "";
-    if (n) { av.appendChild(el("p", { classe: "alerte", texte: t("avDevise") })); av.appendChild(el("p", { classe: "alerte", texte: t("avReferentiel") })); }
+    if (n) {
+      var choisies = etat.entites.map(function (c) { return entitesParCode[c]; }).filter(Boolean);
+      var devises = Array.from(new Set(choisies.map(function (e) { return e.devise; }))).sort();
+      var refs = Array.from(new Set(choisies.map(function (e) { return e.referentiel || "not stated"; }))).sort();
+      av.appendChild(el("p", { classe: "alerte", texte: t("avDevise").replace("{x}", devises.join(", ")) }));
+      av.appendChild(el("p", { classe: "alerte", texte: t("avReferentiel").replace("{x}", refs.join("; ")) }));
+    }
     if (retraite) av.appendChild(el("p", { classe: "alerte", texte: t("avRetraite") }));
     if (relire) av.appendChild(el("p", { classe: "alerte", texte: t("avRelire") }));
     var tab = $("tableau"); tab.textContent = "";
@@ -204,7 +253,7 @@
     var corps = el("tbody");
     lignes.forEach(function (l) {
       var e = D.entites.filter(function (x) { return x.code === l[0]; })[0];
-      var ligne = el("tr", {}, [el("td", { classe: "fixe", texte: e.sigle + " · " + l[1] })]);
+      var ligne = el("tr", {}, [el("td", { classe: "fixe", texte: e.sigle + " · " + l[1] + " · " + e.devise })]);
       cols.forEach(function (c) {
         var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c];
         var td = el("td", { classe: "valeur " + classeStatut(o), tabindex: "0", texte: format(o ? o[C.valeur] : null, c) });
@@ -220,7 +269,7 @@
   // ----- fenêtre de détail d'une valeur (provenance)
   function nomStatut(s) { return { verifie_auto: t("sVerifie"), verifie_humain: t("sHumain"), a_relire: t("sRelire"), en_attente: t("sAttente"), manquant: t("sManquant") }[s] || s; }
   function nomOrigine(o) { return { rapport_de_l_annee: t("oAnnee"), colonne_comparative_du_rapport_suivant: t("oSuivant"), calcul: t("oCalcul") }[o] || o; }
-  function nomRaison(r) { if (!r) return ""; if (r.indexOf("donnee_de_calcul_absente") === 0) return t("rCalcul") + " (" + r.split(":")[1].trim() + ")"; return { ligne_absente_de_l_etat_publie: t("rLigne"), rapport_non_collecte: t("rRapport") }[r] || r; }
+  function nomRaison(r) { if (!r) return ""; if (r.indexOf("donnee_de_calcul_absente") === 0) return t("rCalcul") + " (" + r.split(":")[1].trim() + ")"; return { ligne_absente_de_l_etat_publie: t("rLigne"), rapport_non_collecte: t("rRapport"), non_applicable: t("rNA") }[r] || r; }
   function montrerDetail(e, annee, c, o) {
     var v = vars[c];
     $("detail-titre").textContent = e.sigle + " · " + annee + " · " + (langue === "en" ? v.libelle_en : v.libelle_fr);
@@ -232,7 +281,7 @@
       else dd.textContent = valeur;
       dl.appendChild(el("dt", { texte: t(k) })); dl.appendChild(dd);
     }
-    ajouter("dValeur", o && o[C.valeur] !== null ? format(o[C.valeur], c) + (v.unite === "ratio" ? "" : " (" + (langue === "en" ? "TND thousands" : "milliers de TND") + ")") : "—");
+    ajouter("dValeur", o && o[C.valeur] !== null ? format(o[C.valeur], c) + (v.unite === "ratio" ? "" : " (" + e.devise + " thousands)") : "—");
     ajouter("dStatut", nomStatut(o ? o[C.statut] : "manquant"));
     if (o && o[C.raison_manquant]) ajouter("dRaison", nomRaison(o[C.raison_manquant]));
     if (o && o[C.libelle_origine]) ajouter("dLibelle", o[C.libelle_origine]);
@@ -257,7 +306,7 @@
     var lignes = [["entity", "scope", "year", "variable", "value", "unit", "status", "missing_reason", "origin", "source_id", "page", "label_as_reported", "restated_value", "source_url"]];
     lignesSelection().forEach(function (l) { variablesChoisies().forEach(function (c) {
       var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c], s = o && sources[o[C.id_source]];
-      lignes.push([l[0], etat.perimetre, l[1], c, o ? o[C.valeur] : null, vars[c].unite === "ratio" ? "ratio" : "TND",
+      lignes.push([l[0], etat.perimetre, l[1], c, o ? o[C.valeur] : null, vars[c].unite === "ratio" ? "ratio" : (entitesParCode[l[0]] || {}).devise,
         o ? o[C.statut] : "manquant", o ? o[C.raison_manquant] : "rapport_non_collecte", o ? o[C.origine] : "", o ? o[C.id_source] : "",
         o ? o[C.page] : "", o ? o[C.libelle_origine] : "", o ? o[C.valeur_retraitee] : null, s ? s.url : ""]);
     }); });
@@ -266,15 +315,15 @@
   function nomFichier(ext) { return "fatma_selection_" + etat.perimetre + "_" + D.version + "." + ext; }
   $("dl-excel").addEventListener("click", function () {
     var cols = variablesChoisies(), wb = XLSX.utils.book_new();
-    var large = [["entity", "year"].concat(cols)];
-    lignesSelection().forEach(function (l) { large.push([l[0], l[1]].concat(cols.map(function (c) { var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c]; return o ? o[C.valeur] : null; }))); });
+    var large = [["entity", "year", "currency"].concat(cols)];
+    lignesSelection().forEach(function (l) { large.push([l[0], l[1], (entitesParCode[l[0]] || {}).devise].concat(cols.map(function (c) { var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c]; return o ? o[C.valeur] : null; }))); });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(large), "panel_wide");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tableLongue()), "long_with_quality");
     var dico = [["code", "label_en", "label_fr", "unit", "type", "formula", "definition_en", "definition_fr", "version"]];
-    cols.forEach(function (c) { var v = vars[c]; dico.push([c, v.libelle_en, v.libelle_fr, v.unite === "ratio" ? "ratio" : "TND", v.type, v.formule, v.definition_en, v.definition_fr, v.version]); });
+    cols.forEach(function (c) { var v = vars[c]; dico.push([c, v.libelle_en, v.libelle_fr, v.unite === "ratio" ? "ratio" : "reporting currency", v.type, v.formule, v.definition_en, v.definition_fr, v.version]); });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dico), "codebook");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["dataset_version", D.version], ["scope", etat.perimetre], ["entities", etat.entites.join(" ")], ["years", etat.annees.join(" ")],
-      ["downloaded", new Date().toISOString().slice(0, 10)], ["units", "TND (not thousands); ratios as decimals"], ["missing", "empty cell = missing (never 0); see long_with_quality.missing_reason"],
+      ["downloaded", new Date().toISOString().slice(0, 10)], ["units", "each company's reporting currency (column currency / unit), not thousands; ratios as decimals"], ["missing", "empty cell = missing (never 0); see long_with_quality.missing_reason"],
       ["status", "verifie_auto = passed automatic accounting checks; not human-verified"]]), "about");
     XLSX.writeFile(wb, nomFichier("xlsx"));
   });
@@ -312,6 +361,48 @@
   $("recherche").addEventListener("input", dessinerEntites);
   $("annees-toutes").addEventListener("click", function () { etat.annees = toutesAnnees.slice(); dessinerAnnees(); dessinerApercu(); });
   $("annees-5").addEventListener("click", function () { etat.annees = toutesAnnees.slice(-5); dessinerAnnees(); dessinerApercu(); });
-  function tout() { traduire(); dessinerEntites(); dessinerPerimetres(); dessinerAnnees(); dessinerVariables(); dessinerApercu(); dessinerJeux(); dessinerSelections(); }
+  function tout() { traduire(); dessinerPays(); dessinerEntites(); dessinerPerimetres(); dessinerAnnees(); dessinerVariables(); dessinerApercu(); dessinerJeux(); dessinerSelections(); }
+  // ----- 7. world register of Islamic banks (coverage of the collection)
+  function dessinerRegistre() {
+    var R = D.registre || [];
+    var sec = $("registre-section");
+    if (!R.length) { sec.hidden = true; return; }
+    var resume = $("registre-resume"); resume.textContent = "";
+    [[R.length, t("rBanques")], [new Set(R.map(function (b) { return b.pays; })).size, t("rPays")],
+     [R.filter(function (b) { return b.documents > 0; }).length, t("rCollectees")], [R.filter(function (b) { return b.annees.length > 0; }).length, t("rDonnees")]
+    ].forEach(function (x) { resume.appendChild(el("div", { classe: "tuile" }, [el("div", { classe: "chiffre", texte: String(x[0]) }), el("div", { classe: "quoi", texte: x[1] })])); });
+    var q = $("registre-recherche").value, boite = $("registre-liste"); boite.textContent = "";
+    var parPays = {};
+    R.forEach(function (b) {
+      var texte = [b.nom, b.nom_ar, b.sigle, nomPays(b.pays), b.regulateur].join(" ");
+      if (q && !sonRecherche.trouve(sonRecherche.cle(texte), q)) return;
+      (parPays[b.pays] = parPays[b.pays] || []).push(b);
+    });
+    Object.keys(parPays).sort(function (a, b) { return nomPays(a) < nomPays(b) ? -1 : 1; }).forEach(function (c) {
+      var banques = parPays[c];
+      var avec = banques.filter(function (b) { return b.annees.length > 0; }).length;
+      var det = el("details", { classe: "pays-registre" });
+      if (q) det.open = true;
+      det.appendChild(el("summary", { texte: nomPays(c) + " — " + banques.length + " · " + avec + " " + t("rStatutDonnees") }));
+      var ul = el("ul", { classe: "liste-registre" });
+      banques.forEach(function (b) {
+        var statut = b.annees.length ? t("rStatutDonnees") + " (" + b.annees[0] + "–" + b.annees[b.annees.length - 1] + ")"
+          : b.sanctions ? t("rStatutSanctions") : b.documents ? t("rStatutDocs") : t("rStatutAttente");
+        var forme = b.forme === "islamic_window" ? t("rFenetre") : b.forme === "islamic_subsidiary" ? t("rFiliale") : "";
+        var infos = [b.regulateur, b.cotee === true ? t("rCotee") + (b.bourse ? " (" + b.bourse + (b.ticker ? " " + b.ticker : "") + ")" : "") : b.cotee === false ? t("rNonCotee") : "", forme, b.devise].filter(Boolean).join(" · ");
+        var li = el("li", { classe: "banque-registre " + (b.annees.length ? "ok" : b.documents ? "docs" : "attente") }, [
+          el("div", { classe: "titre", texte: (b.nom || b.sigle) + (b.nom_ar ? " — " + b.nom_ar : "") }),
+          el("div", { classe: "infos", texte: infos }),
+          el("div", { classe: "statut", texte: statut })]);
+        if (b.liste) li.appendChild(el("a", { href: b.liste, target: "_blank", rel: "noopener noreferrer", classe: "petit-lien", texte: t("rListe") }));
+        ul.appendChild(li);
+      });
+      det.appendChild(ul);
+      boite.appendChild(det);
+    });
+  }
+  $("registre-recherche").addEventListener("input", dessinerRegistre);
+
   tout();
+  dessinerRegistre();
 })();

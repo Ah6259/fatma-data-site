@@ -8,9 +8,9 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>FATMA Research Data</title>
 <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/style.css?v=1">
+<link rel="stylesheet" href="assets/style.css?v=2">
 </head>
-<body data-empreinte="e60ff3800702">
+<body data-empreinte="5bd5af9b4d1c">
 <header class="entete">
   <div class="marque">
     <img src="assets/logo.svg" alt="" width="36" height="36">
@@ -27,6 +27,7 @@
   <section class="etape" aria-labelledby="t-entites">
     <h2 id="t-entites"><span class="num">1</span><span data-t="etapeEntites"></span></h2>
     <input type="search" id="recherche" class="champ" autocomplete="off" data-t-placeholder="rechercheEntite">
+    <div class="puces petites" id="pays" aria-label="Country"></div>
     <div id="liste-entites" class="cartes"></div>
     <p id="aucune-entite" class="vide" hidden data-t="aucuneEntite"></p>
   </section>
@@ -82,6 +83,14 @@
     <p id="confirmation" class="confirmation" role="status" hidden></p>
     <ul id="selections" class="liste-liens"></ul>
   </section>
+
+  <section class="etape" aria-labelledby="t-registre" id="registre-section">
+    <h2 id="t-registre"><span class="num">7</span><span data-t="etapeRegistre"></span></h2>
+    <p class="aide" data-t="aideRegistre"></p>
+    <div id="registre-resume" class="tuiles"></div>
+    <input type="search" id="registre-recherche" class="champ" autocomplete="off" data-t-placeholder="rechercheRegistre">
+    <div id="registre-liste"></div>
+  </section>
 </main>
 
 <div id="detail" class="fenetre" hidden role="dialog" aria-modal="true" aria-labelledby="detail-titre">
@@ -101,7 +110,7 @@
 
 <script src="assets/son.js?v=1"></script>
 <script src="assets/lib/xlsx.full.min.js?v=0.20.3"></script>
-<script src="donnees/donnees.js?v=e60ff3800702"></script>
-<script src="assets/app.js?v=1"></script>
+<script src="donnees/donnees.js?v=5bd5af9b4d1c"></script>
+<script src="assets/app.js?v=2"></script>
 </body>
 </html>

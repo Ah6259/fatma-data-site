@@ -113,3 +113,17 @@ dd { margin: 0; word-break: break-word; }
   dl { grid-template-columns: 180px 1fr; }
   dt { margin-top: 0; }
 }
+
+/* country chips, world register of Islamic banks (21/10/2026) */
+.puces.petites { margin-top: 10px; }
+.puces.petites .puce { font-size: 13px; padding: 5px 10px; }
+.pays-registre { border: 1px solid var(--bord); border-radius: 10px; background: var(--carte); margin: 8px 0; }
+.pays-registre > summary { cursor: pointer; padding: 10px 12px; font-weight: 600; color: var(--bleu); }
+.liste-registre { list-style: none; margin: 0; padding: 0 12px 10px; }
+.banque-registre { border-top: 1px solid var(--bord); padding: 8px 0 8px 10px; border-left: 4px solid var(--bord); margin-top: 6px; }
+.banque-registre.ok { border-left-color: var(--ok); }
+.banque-registre.docs { border-left-color: var(--relire); }
+.banque-registre .titre { font-weight: 600; overflow-wrap: anywhere; }
+.banque-registre .infos, .banque-registre .statut { font-size: 13px; color: var(--doux); }
+.banque-registre.ok .statut { color: var(--ok); }
+.petit-lien { font-size: 13px; }
