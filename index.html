@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>FATMA Research Data</title>
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css?v=1">
+</head>
+<body data-empreinte="e60ff3800702">
+<header class="entete">
+  <div class="marque">
+    <img src="assets/logo.svg" alt="" width="36" height="36">
+    <div>
+      <div class="nom" translate="no">FATMA Research Data</div>
+      <div class="sous-titre" data-t="sousTitre"></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p class="intro" data-t="intro"></p>
+
+  <section class="etape" aria-labelledby="t-entites">
+    <h2 id="t-entites"><span class="num">1</span><span data-t="etapeEntites"></span></h2>
+    <input type="search" id="recherche" class="champ" autocomplete="off" data-t-placeholder="rechercheEntite">
+    <div id="liste-entites" class="cartes"></div>
+    <p id="aucune-entite" class="vide" hidden data-t="aucuneEntite"></p>
+  </section>
+
+  <section class="etape" aria-labelledby="t-perimetre">
+    <h2 id="t-perimetre"><span class="num">2</span><span data-t="etapePerimetre"></span></h2>
+    <div class="puces" id="perimetres" role="radiogroup"></div>
+  </section>
+
+  <section class="etape" aria-labelledby="t-annees">
+    <h2 id="t-annees"><span class="num">3</span><span data-t="etapeAnnees"></span></h2>
+    <div class="actions-petites">
+      <button type="button" class="lien" id="annees-toutes" data-t="toutes"></button>
+      <button type="button" class="lien" id="annees-5" data-t="cinqDernieres"></button>
+    </div>
+    <div class="puces" id="annees"></div>
+  </section>
+
+  <section class="etape" aria-labelledby="t-variables">
+    <h2 id="t-variables"><span class="num">4</span><span data-t="etapeVariables"></span></h2>
+    <div id="familles"></div>
+  </section>
+
+  <section class="etape" aria-labelledby="t-apercu">
+    <h2 id="t-apercu"><span class="num">5</span><span data-t="etapeApercu"></span></h2>
+    <div id="resume" class="tuiles"></div>
+    <div id="avertissements"></div>
+    <div class="legende">
+      <span><i class="pastille ok"></i><span data-t="legendeVerifie"></span></span>
+      <span><i class="pastille relire"></i><span data-t="legendeRelire"></span></span>
+      <span><i class="pastille retraite"></i><span data-t="legendeRetraite"></span></span>
+      <span><i class="pastille manque"></i><span data-t="legendeManquant"></span></span>
+    </div>
+    <p class="aide" data-t="aideCellule"></p>
+    <div class="tableau-cadre"><table id="tableau"></table></div>
+    <p id="unite-note" class="aide"></p>
+  </section>
+
+  <section class="etape" aria-labelledby="t-telecharger">
+    <h2 id="t-telecharger"><span class="num">6</span><span data-t="etapeTelecharger"></span></h2>
+    <div class="boutons">
+      <button type="button" class="bouton principal" id="dl-excel" data-t="telechargerExcel"></button>
+      <button type="button" class="bouton" id="dl-csv" data-t="telechargerCsv"></button>
+    </div>
+    <p class="aide" data-t="aideTelechargement"></p>
+    <h3 data-t="jeuComplet"></h3>
+    <ul id="jeux-complets" class="liste-liens"></ul>
+    <h3 data-t="mesSelections"></h3>
+    <div class="boutons">
+      <input type="text" id="nom-selection" class="champ court" maxlength="60" data-t-placeholder="nomSelection">
+      <button type="button" class="bouton" id="enregistrer" data-t="enregistrer"></button>
+    </div>
+    <p id="confirmation" class="confirmation" role="status" hidden></p>
+    <ul id="selections" class="liste-liens"></ul>
+  </section>
+</main>
+
+<div id="detail" class="fenetre" hidden role="dialog" aria-modal="true" aria-labelledby="detail-titre">
+  <div class="fenetre-boite">
+    <button type="button" class="fermer" id="detail-fermer" aria-label="Close">×</button>
+    <h3 id="detail-titre"></h3>
+    <dl id="detail-contenu"></dl>
+  </div>
+</div>
+
+<footer class="pied">
+  <p data-t="piedSources"></p>
+  <p data-t="piedQualite"></p>
+  <p><span data-t="version"></span> <span id="version" translate="no"></span></p>
+  <p>© 2026 FATMA Research Data — <span data-t="droits"></span></p>
+</footer>
+
+<script src="assets/son.js?v=1"></script>
+<script src="assets/lib/xlsx.full.min.js?v=0.20.3"></script>
+<script src="donnees/donnees.js?v=e60ff3800702"></script>
+<script src="assets/app.js?v=1"></script>
+</body>
+</html>

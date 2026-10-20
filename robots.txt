@@ -1,0 +1,5 @@
+# FATMA Research Data — public site, still under development (Ahmed's decision, 20/10/2026).
+# Not announced to search engines yet: every robot is asked not to crawl (pages also carry "noindex").
+# AI training robots and site scrapers are refused in any case (© all rights reserved).
+User-agent: *
+Disallow: /

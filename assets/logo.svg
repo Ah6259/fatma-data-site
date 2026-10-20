@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FATMA Research Data">
+  <rect width="64" height="64" rx="14" fill="#123b5d"/>
+  <rect x="14" y="36" width="8" height="14" rx="2" fill="#7fb8e6"/>
+  <rect x="28" y="26" width="8" height="24" rx="2" fill="#b9dbf5"/>
+  <rect x="42" y="16" width="8" height="34" rx="2" fill="#ffffff"/>
+  <path d="M13 30 L27 20 L37 24 L51 11" fill="none" stroke="#e8b04a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
