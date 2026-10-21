@@ -383,7 +383,7 @@
       var avec = banques.filter(function (b) { return b.annees.length > 0; }).length;
       var det = el("details", { classe: "pays-registre" });
       if (q) det.open = true;
-      det.appendChild(el("summary", { texte: nomPays(c) + " — " + banques.length + " · " + avec + " " + t("rStatutDonnees") }));
+      det.appendChild(el("summary", { texte: nomPays(c) + " — " + banques.length + " " + (banques.length > 1 ? "banks" : "bank") + " · " + avec + " with figures" }));
       var ul = el("ul", { classe: "liste-registre" });
       banques.forEach(function (b) {
         var statut = b.annees.length ? t("rStatutDonnees") + " (" + b.annees[0] + "–" + b.annees[b.annees.length - 1] + ")"
