@@ -72,7 +72,12 @@
       avIAH: "Islamic banks present investment accounts differently (equity of investment account holders under AAOIFI, liabilities or customer deposits under IFRS): deposit-based ratios are not directly comparable; see Financing to deposits and investment accounts.",
       avTypes: "This selection mixes Islamic and conventional banks.",
       avOpinion: "The auditor's opinion is not unqualified for: {x}.",
-      avCadre: "Accounting frameworks stated in the documents: {x}."
+      avCadre: "Accounting frameworks stated in the documents: {x}.",
+      refTitre: "Reference set — values entered by hand",
+      refAide: "For each line, open the official document at the page given, find the line named in « label in the document » and type the number EXACTLY as printed (minus sign or brackets for negatives) with the unit printed on the page (units, thousands or millions). Our value is not shown, so that the comparison is blind. Your entries are kept on this device until you export them.",
+      refExport: "Download my entries (CSV)", refEnvoi: "Send the downloaded file to Ahmed (or put it in registres/reference/ of the private repository): outils/mesurer_precision.py then measures the accuracy by language and by family.",
+      refFait: "entered", refReste: "to do", refIntrouvable: "not found on the page", refUnite: "unit printed",
+      uUnites: "units", uMilliers: "thousands", uMillions: "millions", mReference: "Reference set"
     }
   };
   var CLE_SEL = "fatma-research-selections";
@@ -516,7 +521,11 @@
   function route() {
     var m = /^#bank=([A-Z]{2}\.[A-Z0-9]+)$/.exec(location.hash);
     var ok = m && dessinerFiche(m[1]);
+    var ref = location.hash === "#reference" && (D.echantillon_reference || []).length > 0;
+    if (ref) dessinerReference();
     $("fiche").hidden = !ok;
+    $("reference").hidden = !ref;
+    ok = ok || ref;
     document.querySelectorAll("main > section.etape, main > .intro").forEach(function (n) { n.hidden = !!ok; });
     if (ok) { try { window.scrollTo(0, 0); } catch (e) { /* no scrolling available: nothing to do */ } }
     else if (location.hash.length > 1 && !m) { var cible = document.getElementById(location.hash.slice(1)); if (cible) cible.scrollIntoView(); }
@@ -579,6 +588,41 @@
       .then(function () { bout.disabled = false; });
   });
 
+  // ----- reference set entered by hand (#reference): blind entry, kept on this device, exported as CSV
+  var CLE_REF = "fatma-reference-saisie";
+  function saisies() { try { return JSON.parse(lire(CLE_REF) || "{}"); } catch (e) { return {}; } }
+  function dessinerReference() {
+    var E = D.echantillon_reference || [], S = saisies(), tab = $("ref-table"); tab.textContent = "";
+    var faits = E.filter(function (x) { return S[x.id] && (S[x.id].valeur !== "" || S[x.id].introuvable); }).length;
+    var r = $("ref-resume"); r.textContent = "";
+    [[faits, t("refFait")], [E.length - faits, t("refReste")]].forEach(function (x) { r.appendChild(el("div", { classe: "tuile" }, [el("div", { classe: "chiffre", texte: String(x[0]) }), el("div", { classe: "quoi", texte: x[1] })])); });
+    var tr = el("tr", {});
+    ["#", t("entreprise"), t("annee"), t("dLibelle"), t("dDocument"), t("dValeur"), t("refUnite"), t("refIntrouvable")].forEach(function (k) { tr.appendChild(el("th", { texte: k })); });
+    tab.appendChild(el("thead", {}, [tr]));
+    var corps = el("tbody");
+    E.forEach(function (x) {
+      var e = entitesParCode[x.entite] || { sigle: x.entite }, s = sources[x.id_source], v = S[x.id] || { valeur: "", unite: "1", introuvable: false };
+      var champ = el("input", { type: "text", inputmode: "decimal", classe: "champ court", value: v.valeur, "aria-label": x.id });
+      var unite = el("select", { "aria-label": t("refUnite") }, [["1", t("uUnites")], ["1000", t("uMilliers")], ["1000000", t("uMillions")]].map(function (u) {
+        var o = el("option", { value: u[0], texte: u[1] }); if (v.unite === u[0]) o.selected = true; return o; }));
+      var absent = el("input", { type: "checkbox", "aria-label": t("refIntrouvable") }); absent.checked = !!v.introuvable;
+      function garder() { var T2 = saisies(); T2[x.id] = { valeur: champ.value.trim(), unite: unite.value, introuvable: absent.checked }; ecrire(CLE_REF, JSON.stringify(T2)); }
+      champ.addEventListener("change", garder); unite.addEventListener("change", garder); absent.addEventListener("change", garder);
+      corps.appendChild(el("tr", {}, [el("td", { texte: x.id }), el("td", { texte: e.sigle + " · " + t(x.perimetre) }), el("td", { texte: String(x.annee) }),
+        el("td", { texte: x.libelle + " (" + (vars[x.variable] ? vars[x.variable].libelle_en : x.variable) + ")" }),
+        el("td", {}, [s ? el("a", { href: s.url, target: "_blank", rel: "noopener noreferrer", texte: s.titre + " — p. " + x.page }) : el("span", { texte: "p. " + x.page })]),
+        el("td", {}, [champ]), el("td", {}, [unite]), el("td", {}, [absent])]));
+    });
+    tab.appendChild(corps);
+  }
+  $("ref-export").addEventListener("click", function () {
+    var S = saisies(), lignes = [["id", "entity", "scope", "year", "variable", "source_id", "page", "value_typed", "unit_printed", "not_found", "dataset_version"]];
+    (D.echantillon_reference || []).forEach(function (x) { var v = S[x.id] || {}; lignes.push([x.id, x.entite, x.perimetre, x.annee, x.variable, x.id_source, x.page, v.valeur || "", v.unite || "1", v.introuvable ? 1 : 0, D.version]); });
+    var csv = lignes.map(function (l) { return l.map(function (z) { z = String(z === undefined ? "" : z); return /[",\n]/.test(z) ? '"' + z.replace(/"/g, '""') + '"' : z; }).join(","); }).join("\n") + "\n";
+    var a = el("a", { href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })), download: "fatma_reference_" + new Date().toISOString().slice(0, 10) + ".csv" });
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
   // ----- 10. guide for researchers (one page)
   var GUIDE = [
     ["What is in the database", "Financial statements of Islamic banks taken from their official documents (balance sheet, income statement, cash flows, off-balance sheet), audit and Sharia governance facts read in the auditor's and Sharia board's reports, governance and ESG facts stated in the annual reports, and the world register of Islamic banks with the progress of the collection."],
@@ -589,7 +633,8 @@
     ["Comparing banks", "Read the warnings above the preview: currencies, accounting frameworks (AAOIFI, IFRS, local), fiscal year ends, Islamic vs conventional banks, investment accounts presented differently, qualified audit opinions."],
     ["Text variables", "Audit, Sharia, governance and ESG variables are read with fixed rules in the text (no AI): each keeps its page and a short extract. Counts are given only when a sentence states them (never added up from lists). The SDG disclosure index (0-8) measures disclosure, not performance; its scale is version 1, to be confirmed against the specification."],
     ["Citing the data and versions", "Cite the dataset version shown at the bottom of the page (for example FATMA Research Data, version vYYYYMMDD-xxxxxx). Every version can be rebuilt exactly from the archive. Each value also gives the official document and page it comes from."],
-    ["Errors and requests", "Use « Report an error or request a variable »: give the bank, the variable and the year if you can. Answers come by e-mail."]
+    ["Errors and requests", "Use « Report an error or request a variable »: give the bank, the variable and the year if you can. Answers come by e-mail."],
+    ["Reference set (for the researcher)", "The page « Reference set » (link at the top) lists a fixed sample of 150 values spread over languages and statements. Type each value as printed in the document, without seeing ours; the downloaded file lets us measure the accuracy of the database by language and by family."]
   ];
   function dessinerGuide() {
     var g = $("guide-contenu"); g.textContent = "";
