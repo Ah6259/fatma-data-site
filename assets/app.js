@@ -20,7 +20,7 @@
       uniteNote: "Amounts in thousands of each company's own reporting currency (shown next to the company), as in the published statements. Ratios in %.",
       rienAAfficher: "Choose at least one company, one year and one variable.",
       entreprise: "Company", annee: "Year",
-      etapeTelecharger: "Download", telechargerExcel: "Excel (my selection)", telechargerCsv: "CSV long format (my selection)", telechargerStata: "Stata do-file (my selection)",
+      etapeTelecharger: "Download", telechargerExcel: "Excel (my selection)", telechargerCsv: "CSV long format (my selection)", telechargerStata: "Stata do-file (my selection)", telechargerJournal: "Selection log (sample)", telechargerCitation: "How to cite (BibTeX, RIS, sources)",
       modeGuide: "Guided: key variables", modeAvance: "Advanced: all variables",
       aideGuide: "Guided mode shows the key variables only (size, financing, deposits, equity, income, main ratios, audit, Sharia). Switch to Advanced to see every variable.",
       aideAvance: "Advanced mode shows every variable, grouped by family.",
@@ -282,6 +282,7 @@
       if (!o || o[C.statut] === "manquant") manque++; else if (o[C.statut] === "verifie_auto") ok++; else relire++;
       if (o && o[C.valeur_retraitee] !== null) retraite++;
     }); });
+    noterSelection(n, ok);
     var r = $("resume"); r.textContent = "";
     [[etat.entites.length, t("entites")], [etat.annees.length, t("annees")], [cols.length, t("variables")], [n, t("observations")],
      [ok, t("verifiees")], [relire, t("aRelire")], [manque, t("manquantes")]].forEach(function (x) {
@@ -441,6 +442,88 @@
     var a = el("a", { href: URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" })), download: nomFichier("csv") });
     document.body.appendChild(a); a.click(); a.remove();
   });
+  function telechargerTexte(texte, nom) {
+    var a = el("a", { href: URL.createObjectURL(new Blob([texte], { type: "text/plain;charset=utf-8" })), download: nom });
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  // ----- sample builder: log of every change of the selection, with the size of the sample after it (spec § 20-30)
+  var journalSel = [], avantJournal = null;
+  function heure() { return new Date().toISOString().slice(0, 19).replace("T", " ") + " UTC"; }
+  function noterSelection(n, ok) {
+    var m = { entites: etat.entites.slice().sort(), perimetre: etat.perimetre, annees: etat.annees.slice().sort(), variables: variablesChoisies() };
+    var d = [];
+    function diff(nom, a, b) {
+      var plus = b.filter(function (x) { return a.indexOf(x) < 0; }), moins = a.filter(function (x) { return b.indexOf(x) < 0; });
+      if (plus.length) d.push(nom + " added: " + plus.join(" "));
+      if (moins.length) d.push(nom + " removed: " + moins.join(" "));
+    }
+    if (!avantJournal) d.push("start");
+    else {
+      diff("companies", avantJournal.entites, m.entites); diff("years", avantJournal.annees, m.annees); diff("variables", avantJournal.variables, m.variables);
+      if (avantJournal.perimetre !== m.perimetre) d.push("scope: " + m.perimetre);
+    }
+    if (d.length) journalSel.push({ quand: heure(), quoi: d.join("; "), entites: m.entites.length, annees: m.annees.length, variables: m.variables.length, n: n, ok: ok });
+    avantJournal = m;
+  }
+  function texteJournal() {
+    var L = [], cols = variablesChoisies(), dernier = journalSel[journalSel.length - 1] || {};
+    L.push("FATMA Research Data — sample selection log");
+    L.push("Dataset version: " + D.version + "   Written: " + heure());
+    L.push("");
+    L.push("FINAL SAMPLE");
+    L.push("Scope: " + etat.perimetre);
+    L.push("Years (" + etat.annees.length + "): " + etat.annees.join(" "));
+    L.push("Companies (" + etat.entites.length + "):");
+    etat.entites.forEach(function (c) { var e = entitesParCode[c] || {}; L.push("  " + c + " — " + ((e.nom || {}).en || (e.nom || {}).fr || "") + " (" + nomPays(e.pays) + ", " + (e.devise || "") + ")"); });
+    L.push("Variables (" + cols.length + "): " + cols.join(" "));
+    L.push("Cells: " + (dernier.n || 0) + ", automatically verified: " + (dernier.ok || 0) + " (automatic accounting checks, not human-verified)");
+    var av = (dernier.n ? avertissements(etat.entites, etat.annees, etat.perimetre) : []);
+    if (av.length) { L.push("Comparability warnings:"); av.forEach(function (x) { L.push("  - " + x); }); }
+    L.push("");
+    L.push("SELECTION STEPS (in this browser session)");
+    L.push("step | time | change | companies | years | variables | cells | verified");
+    journalSel.forEach(function (j, i) { L.push([i + 1, j.quand, j.quoi, j.entites, j.annees, j.variables, j.n, j.ok].join(" | ")); });
+    L.push("");
+    L.push("Rebuild: open " + location.origin + location.pathname + " , choose the same scope, years, companies and variables; the dataset version above can be rebuilt exactly.");
+    return L.join("\n") + "\n";
+  }
+  $("dl-journal").addEventListener("click", function () { telechargerTexte(texteJournal(), nomFichier("log.txt")); });
+  // ----- citation export: the dataset version, and every official document the selected values come from
+  function texteCitation() {
+    var an = D.version.slice(1, 5), vu = new Date().toISOString().slice(0, 10), url = location.origin + location.pathname;
+    var docs = {}, ordre = [];
+    lignesSelection().forEach(function (l) { variablesChoisies().forEach(function (c) {
+      var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c], s = o && sources[o[C.id_source]];
+      if (!s) return;
+      if (!docs[s.id]) { docs[s.id] = { s: s, pages: [] }; ordre.push(s.id); }
+      var p = o[C.page]; if (p !== null && p !== "" && docs[s.id].pages.indexOf(String(p)) < 0) docs[s.id].pages.push(String(p));
+    }); });
+    var L = [];
+    L.push("HOW TO CITE THE DATA");
+    L.push("FATMA Research Data Platform (" + an + "). Dataset version " + D.version + ". " + url + " (accessed " + vu + ").");
+    L.push("");
+    L.push("BibTeX");
+    L.push("@misc{fatma_" + D.version.replace(/[^A-Za-z0-9]/g, "_") + ",");
+    L.push("  title = {{FATMA Research Data Platform}, dataset version " + D.version + "},");
+    L.push("  year = {" + an + "},");
+    L.push("  howpublished = {\\url{" + url + "}},");
+    L.push("  note = {Accessed " + vu + "}");
+    L.push("}");
+    L.push("");
+    L.push("RIS");
+    L.push("TY  - DATA"); L.push("TI  - FATMA Research Data Platform, dataset version " + D.version); L.push("PY  - " + an);
+    L.push("UR  - " + url); L.push("Y2  - " + vu); L.push("ER  - ");
+    L.push("");
+    L.push("OFFICIAL SOURCE DOCUMENTS OF THE SELECTED VALUES (" + ordre.length + ")");
+    ordre.forEach(function (id) {
+      var x = docs[id], e = entitesParCode[x.s.entite] || {};
+      var pages = x.pages.sort(function (a, b) { return Number(a) - Number(b); });
+      L.push("- " + ((e.nom || {}).en || x.s.entite) + ". " + (x.s.titre || id) + ". " + (x.s.url || "") + (pages.length ? " (pages " + pages.join(", ") + ")" : ""));
+    });
+    if (!ordre.length) L.push("(no value selected yet)");
+    return L.join("\n") + "\n";
+  }
+  $("dl-citation").addEventListener("click", function () { telechargerTexte(texteCitation(), nomFichier("citation.txt")); });
   function dessinerJeux() {
     var ul = $("jeux-complets"); ul.textContent = "";
     D.telechargements.forEach(function (f) { ul.appendChild(el("li", {}, [el("a", { href: "telechargements/" + f, download: f, texte: f })])); });
