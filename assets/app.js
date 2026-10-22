@@ -20,7 +20,10 @@
       uniteNote: "Amounts in thousands of each company's own reporting currency (shown next to the company), as in the published statements. Ratios in %.",
       rienAAfficher: "Choose at least one company, one year and one variable.",
       entreprise: "Company", annee: "Year",
-      etapeTelecharger: "Download", telechargerExcel: "Excel (my selection)", telechargerCsv: "CSV long format (my selection)",
+      etapeTelecharger: "Download", telechargerExcel: "Excel (my selection)", telechargerCsv: "CSV long format (my selection)", telechargerStata: "Stata do-file (my selection)",
+      modeGuide: "Guided: key variables", modeAvance: "Advanced: all variables",
+      aideGuide: "Guided mode shows the key variables only (size, financing, deposits, equity, income, main ratios, audit, Sharia). Switch to Advanced to see every variable.",
+      aideAvance: "Advanced mode shows every variable, grouped by family.",
       aideTelechargement: "The Excel file has 4 sheets: panel (one row per company-year), long format with the quality of each value, codebook, and dataset version. Amounts are in units of each company's reporting currency (not thousands); the currency is given on every row.",
       jeuComplet: "Full dataset (Excel and Stata)", mesSelections: "My saved selections", nomSelection: "Selection name",
       enregistrer: "Save selection", enregistree: "Selection saved: ", ouvrir: "Open", supprimer: "Delete", aucuneSelection: "No selection saved on this device.",
@@ -204,10 +207,25 @@
   }
 
   // ----- 4. variables, par famille, repliables
+  // Guided mode: the key variables only; Advanced mode: every variable (remembered on this device)
+  var CLES_GUIDE = ["BS.TOTAL_ASSETS", "BS.FINANCING_CUSTOMERS", "BS.LOANS_CUSTOMERS", "BS.DEPOSITS_CUSTOMERS", "BS.EQUITY_IAH",
+    "BS.TOTAL_EQUITY", "IS.FINANCING_INCOME", "IS.NET_INCOME", "CF.OPERATING", "RATIO.ROA", "RATIO.ROE", "RATIO.EQUITY_TO_ASSETS",
+    "RATIO.FINANCING_TO_FUNDING", "RISK.CAR", "AUD.FIRM", "AUD.BIG4", "AUD.OPINION", "SHR.SSB_CONCLUSION", "SHR.FRAMEWORK"];
+  var mode = lire("fatma-mode") === "avance" ? "avance" : "guide";
+  function dessinerModes() {
+    var boite = $("modes"); boite.textContent = "";
+    [["guide", t("modeGuide")], ["avance", t("modeAvance")]].forEach(function (x) {
+      var b = el("button", { type: "button", classe: "puce", role: "radio", "aria-checked": String(mode === x[0]), texte: x[1] });
+      b.addEventListener("click", function () { mode = x[0]; ecrire("fatma-mode", mode); dessinerModes(); dessinerVariables(); });
+      boite.appendChild(b);
+    });
+    $("aide-mode").textContent = mode === "guide" ? t("aideGuide") : t("aideAvance");
+  }
   function dessinerVariables() {
     var boite = $("familles"); boite.textContent = "";
     familles.forEach(function (f) {
-      var liste = D.variables.filter(function (v) { return v.famille === f; });
+      var liste = D.variables.filter(function (v) { return v.famille === f && (mode === "avance" || CLES_GUIDE.indexOf(v.code) >= 0); });
+      if (!liste.length) return;
       var n = liste.filter(function (v) { return etat.variables.indexOf(v.code) >= 0; }).length;
       var ouverte = !!etat.ouvertes[f];
       var tete = el("button", { type: "button", classe: "famille-tete", "aria-expanded": String(ouverte) }, [
@@ -388,6 +406,36 @@
       ["status", "verifie_auto = passed automatic accounting checks; not human-verified"]]), "about");
     XLSX.writeFile(wb, nomFichier("xlsx"));
   });
+  // Stata: one do-file that rebuilds the selection (data typed with « input », variable labels, notes on units)
+  function doStata() {
+    var cols = variablesChoisies(), L = [];
+    function nomS(c) { return c.toLowerCase().replace(/\./g, "_").slice(0, 32); }
+    function texte(x) { return '"' + String(x).replace(/"/g, "'").replace(/[\r\n]+/g, " ").slice(0, 240) + '"'; }
+    L.push("* FATMA Research Data — selection, dataset version " + D.version + ", scope " + etat.perimetre);
+    L.push("* Amounts in units of each company's reporting currency (variable currency); ratios as decimals; missing = . (never 0).");
+    L.push("* Status of each value: see the CSV long format (verifie_auto = passed automatic checks, not human-verified).");
+    L.push("clear");
+    var types = cols.map(function (c) { return vars[c].unite === "texte" ? "str244 " + nomS(c) : "double " + nomS(c); });
+    L.push("input str32 entity int year str8 currency " + types.join(" "));
+    lignesSelection().forEach(function (l) {
+      var vals = cols.map(function (c) {
+        var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c], v = o ? o[C.valeur] : null;
+        if (vars[c].unite === "texte") return texte(v === null ? "" : v);
+        return v === null || v === undefined ? "." : String(v);
+      });
+      L.push([texte(l[0]), l[1], texte((entitesParCode[l[0]] || {}).devise || "")].concat(vals).join(" "));
+    });
+    L.push("end");
+    L.push('label variable entity "Entity code"'); L.push('label variable year "Fiscal year"'); L.push('label variable currency "Reporting currency"');
+    cols.forEach(function (c) { L.push("label variable " + nomS(c) + " " + texte(vars[c].libelle_en.slice(0, 80))); });
+    L.push("notes: FATMA Research Data " + D.version + " — " + new Date().toISOString().slice(0, 10));
+    L.push("compress");
+    return L.join("\n") + "\n";
+  }
+  $("dl-stata").addEventListener("click", function () {
+    var a = el("a", { href: URL.createObjectURL(new Blob([doStata()], { type: "text/plain;charset=utf-8" })), download: nomFichier("do") });
+    document.body.appendChild(a); a.click(); a.remove();
+  });
   $("dl-csv").addEventListener("click", function () {
     var csv = tableLongue().map(function (l) { return l.map(function (x) { x = x === null || x === undefined ? "" : String(x); return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; }).join(","); }).join("\n") + "\n";
     var a = el("a", { href: URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" })), download: nomFichier("csv") });
@@ -422,7 +470,7 @@
   $("recherche").addEventListener("input", dessinerEntites);
   $("annees-toutes").addEventListener("click", function () { etat.annees = toutesAnnees.slice(); dessinerAnnees(); dessinerApercu(); });
   $("annees-5").addEventListener("click", function () { etat.annees = toutesAnnees.slice(-5); dessinerAnnees(); dessinerApercu(); });
-  function tout() { traduire(); dessinerPays(); dessinerEntites(); dessinerPerimetres(); dessinerAnnees(); dessinerVariables(); dessinerApercu(); dessinerJeux(); dessinerSelections(); }
+  function tout() { traduire(); dessinerPays(); dessinerEntites(); dessinerPerimetres(); dessinerAnnees(); dessinerModes(); dessinerVariables(); dessinerApercu(); dessinerJeux(); dessinerSelections(); }
   // ----- 7. world register of Islamic banks (coverage of the collection)
   function dessinerRegistre() {
     var R = D.registre || [];
@@ -628,7 +676,7 @@
   // ----- 10. guide for researchers (one page)
   var GUIDE = [
     ["What is in the database", "Financial statements of Islamic banks taken from their official documents (balance sheet, income statement, cash flows, off-balance sheet), audit and Sharia governance facts read in the auditor's and Sharia board's reports, governance and ESG facts stated in the annual reports, and the world register of Islamic banks with the progress of the collection."],
-    ["How to build a dataset", "1. Choose companies (search by name or ticker, filter by country). 2. Choose consolidated or standalone statements. 3. Choose years. 4. Choose variables (each has a definition). 5. Check the preview: tap a value to see its document, page and original label. 6. Download Excel or CSV for your selection, or the full dataset in Excel and Stata."],
+    ["How to build a dataset", "1. Choose companies (search by name or ticker, filter by country). 2. Choose consolidated or standalone statements. 3. Choose years. 4. Choose variables (Guided mode: key variables; Advanced mode: all, each with a definition). 5. Check the preview: tap a value to see its document, page and original label. 6. Download Excel, CSV or a Stata do-file for your selection, or the full dataset in Excel and Stata."],
     ["What the colours and statuses mean", "Automatically verified: the value passed the accounting checks (totals, balance sheet equality, chain of the income statement, cash flows, consistency with the following year). It is NOT a human verification. To review: a check failed or the figure was hard to read (scans). Awaiting checks: no check could test it yet. Restated: the following year's report gives another figure; the original is kept and the restated value is shown next to it."],
     ["Missing values", "A missing value is always empty, never 0, and always has a reason: line not present in the published statement, document not collected, not applicable, value needed for a ratio missing, not stated in the document."],
     ["Units", "Amounts are in each company's own reporting currency, as published (the downloads give them in units; the screen shows thousands). No currency conversion. Ratios are decimals in the files and percentages on screen. Text variables (audit firm, opinion, framework) are given as read."],
