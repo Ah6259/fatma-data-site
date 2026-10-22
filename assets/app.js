@@ -58,10 +58,10 @@
       retour: "← back to the data", pageBanque: "bank page",
       fChiffres: "Key figures by year", fTexte: "Audit, Sharia, governance and ESG (read in the text)", fCouverture: "Coverage",
       fDocuments: "Official documents used", signalerBanque: "Report an error on this bank",
-      fRegulateur: "Regulator", fCotation: "Listing", fDevise: "Reporting currency", fExercice: "Fiscal year end", fPerimetre: "Statements shown",
+      fSecteur: "Sector", fRegulateur: "Regulator", fCotation: "Listing", fDevise: "Reporting currency", fExercice: "Fiscal year end", fPerimetre: "Statements shown",
       versionsTitre: "Dataset versions", aideVersions: "Each version is listed with its date and size. A version can be rebuilt exactly from the private archive (same fingerprint, same files).",
       etapeCouverture: "Coverage report", aideCouverture: "For every bank with collected documents: years collected, years with figures, values read, automatically verified, to review, and the main reasons of missing values.",
-      cBanque: "Bank", cPays: "Country", cDocs: "Years collected", cAnnees: "Years with figures", cValeurs: "Values", cVerifiees: "Verified", cRelire: "To review", cRaisons: "Main reasons of missing values",
+      cBanque: "Company", cSecteur: "Sector", cPays: "Country", cDocs: "Years collected", cAnnees: "Years with figures", cValeurs: "Values", cVerifiees: "Verified", cRelire: "To review", cRaisons: "Main reasons of missing values",
       cBanques: "banks with documents", cAvecDonnees: "with figures", cTotalValeurs: "values read", cTotalVerifiees: "automatically verified",
       etapeContact: "Report an error or request a variable",
       aideContact: "Seen a wrong value, or need a variable that is not in the database? Tell us: every message is read and answered by e-mail.",
@@ -149,7 +149,7 @@
       var nom = e.nom.en || e.nom.fr;
       boite.appendChild(el("label", { classe: "carte-entite" + (choisie ? " choisie" : ""), "for": "e-" + e.code }, [case_,
         el("div", {}, [el("div", { classe: "titre", texte: e.sigle + " — " + nom }),
-          el("div", { classe: "infos", texte: [e.nom.ar, nomPays(e.pays), e.devise, e.referentiel].filter(Boolean).join(" · ") }),
+          el("div", { classe: "infos", texte: [secteur(e.type), e.nom.ar, nomPays(e.pays), e.devise, e.referentiel].filter(Boolean).join(" · ") }),
           el("a", { href: "#bank=" + e.code, classe: "petit-lien", texte: t("pageBanque") })])]));
     });
     $("aucune-entite").hidden = trouvees.length > 0;
@@ -519,7 +519,7 @@
     "RATIO.FINANCING_TO_FUNDING", "RATIO.COST_TO_INCOME_IFRS"];
   var TEXTE_CLES = ["AUD.FIRM", "AUD.BIG4", "AUD.OPINION", "AUD.KAM", "AUD.KAM_COUNT", "AUD.KAM_TOPICS", "AUD.FEES", "SHR.SSB_REPORT",
     "SHR.SSB_MEMBERS", "SHR.SSB_CONCLUSION", "SHR.SHARIA_AUDIT", "SHR.FRAMEWORK", "SHR.ZAKAT_BY", "GOV.BOARD_SIZE",
-    "GOV.BOARD_INDEPENDENT", "GOV.BOARD_WOMEN", "GOV.CEO_DUALITY", "OWN.LARGEST", "RISK.CAR", "ISL.PER", "ISL.IRR", "ISL.RIA",
+    "GOV.BOARD_INDEPENDENT", "GOV.BOARD_WOMEN", "GOV.CEO_DUALITY", "OWN.LARGEST", "OWN.STATE", "OWN.FOREIGN", "RISK.CAR", "ISL.PER", "ISL.IRR", "ISL.RIA",
     "ISL.NON_SHARIA_INCOME", "ESG.EMPLOYEES", "ESG.SDG_INDEX"];
   function tableauFiche(tab, e, perim, annees, codes) {
     tab.textContent = "";
@@ -549,7 +549,7 @@
     var annees = Array.from(new Set(D.observations.filter(function (o) { return o[C.entite] === code && o[C.perimetre] === perim && o[C.valeur] !== null; }).map(function (o) { return o[C.annee]; }))).sort();
     $("fiche-titre").textContent = (e.nom.en || e.nom.fr || e.sigle) + (e.nom.ar ? " — " + e.nom.ar : "");
     var infos = $("fiche-infos"); infos.textContent = "";
-    [[t("cPays"), nomPays(e.pays)], [t("fRegulateur"), e.regulateur], [t("fCotation"), e.cotee ? (e.bourse || "") + (e.ticker ? " " + e.ticker : "") : e.cotee === false ? t("rNonCotee") : ""],
+    [[t("fSecteur"), secteur(e.type)], [t("cPays"), nomPays(e.pays)], [t("fRegulateur"), e.regulateur], [t("fCotation"), e.cotee ? (e.bourse || "") + (e.ticker ? " " + e.ticker : "") : e.cotee === false ? t("rNonCotee") : ""],
      [t("fDevise"), e.devise], [t("fExercice"), e.fin_exercice], [t("fPerimetre"), t(perim)]].forEach(function (x) {
       if (x[1]) infos.appendChild(el("div", {}, [el("strong", { texte: x[0] + ": " }), el("span", { texte: x[1] })]));
     });
@@ -582,6 +582,12 @@
   }
   window.addEventListener("hashchange", route);
 
+  // sector of a company (Islamic bank, Islamic window, conventional bank, other company)
+  function secteur(type) {
+    return { banque_islamique: "Islamic bank", banque_islamique_fenetre: "Islamic window of a bank", banque_conventionnelle: "Conventional bank",
+      societe: "Company (non-financial)" }[type] || "";
+  }
+
   // ----- 8. coverage report
   function dessinerCouverture() {
     var L = D.couverture || [], tab = $("couverture-table"), r = $("couverture-resume");
@@ -590,12 +596,13 @@
      [L.reduce(function (s, x) { return s + x.valeurs; }, 0), t("cTotalValeurs")], [L.reduce(function (s, x) { return s + x.verifiees; }, 0), t("cTotalVerifiees")]
     ].forEach(function (x) { r.appendChild(el("div", { classe: "tuile" }, [el("div", { classe: "chiffre", texte: String(x[0]) }), el("div", { classe: "quoi", texte: x[1] })])); });
     var tr = el("tr", {});
-    ["cBanque", "cPays", "cDocs", "cAnnees", "cValeurs", "cVerifiees", "cRelire", "cRaisons"].forEach(function (k) { tr.appendChild(el("th", { texte: t(k) })); });
+    ["cBanque", "cSecteur", "cPays", "cDocs", "cAnnees", "cValeurs", "cVerifiees", "cRelire", "cRaisons"].forEach(function (k) { tr.appendChild(el("th", { texte: t(k) })); });
     tab.appendChild(el("thead", {}, [tr]));
     var corps = el("tbody");
     L.slice().sort(function (a, b) { return b.verifiees - a.verifiees || (a.nom < b.nom ? -1 : 1); }).forEach(function (x) {
       var nom = entitesParCode[x.code] ? el("a", { href: "#bank=" + x.code, texte: x.nom }) : el("span", { texte: x.nom });
-      corps.appendChild(el("tr", {}, [el("td", {}, [nom]), el("td", { texte: nomPays(x.pays) }),
+      corps.appendChild(el("tr", {}, [el("td", {}, [nom]), el("td", { texte: secteur((entitesParCode[x.code] || {}).type || x.type || "banque_islamique") }),
+        el("td", { texte: nomPays(x.pays) }),
         el("td", { texte: x.annees_documents.join(", ") }), el("td", { texte: x.annees_valeurs.join(", ") || "—" }),
         el("td", { texte: String(x.valeurs) }), el("td", { texte: String(x.verifiees) }), el("td", { texte: String(x.a_relire) }),
         el("td", { texte: x.raisons.map(function (r) { return nomRaison(r[0]) + " (" + r[1] + ")"; }).join("; ") })]));
