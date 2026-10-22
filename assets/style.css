@@ -127,3 +127,17 @@ dd { margin: 0; word-break: break-word; }
 .banque-registre .infos, .banque-registre .statut { font-size: 13px; color: var(--doux); }
 .banque-registre.ok .statut { color: var(--ok); }
 .petit-lien { font-size: 13px; }
+
+/* menu, bank page, coverage report, contact form, guide (22/10/2026) */
+.menu { font-size: 14px; margin: 0 0 14px; }
+.fiche { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 14px; margin-bottom: 18px; }
+.fiche h2 { margin-top: 4px; overflow-wrap: anywhere; }
+.fiche h3 { margin: 18px 0 6px; }
+.fiche .infos { display: grid; gap: 4px; font-size: 14px; }
+#formulaire label { display: block; margin: 10px 0 4px; font-weight: 600; }
+#formulaire textarea { resize: vertical; }
+#formulaire .bouton { margin-top: 12px; }
+.piege { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+#couverture-table td, #couverture-table th { font-size: 13px; }
+#guide-contenu h3 { margin: 14px 0 4px; }
+#guide-contenu p { margin: 0 0 8px; }

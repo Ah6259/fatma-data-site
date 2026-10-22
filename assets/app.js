@@ -50,7 +50,29 @@
       rContrat: "this contract is not shown in the financing note", rNote: "financing note not found in the document",
       avRetraite: "Some values were restated by the company the following year: the original value is kept, the restated value is shown next to it.",
       avRelire: "Some values are “to review”: they did not pass all automatic checks.",
-      ouvrirDocument: "open the official page"
+      ouvrirDocument: "open the official page",
+      mDonnees: "Data", mCouverture: "Coverage", mGuide: "Guide", mContact: "Report an error / request a variable",
+      retour: "← back to the data", pageBanque: "bank page",
+      fChiffres: "Key figures by year", fTexte: "Audit, Sharia, governance and ESG (read in the text)", fCouverture: "Coverage",
+      fDocuments: "Official documents used", signalerBanque: "Report an error on this bank",
+      fRegulateur: "Regulator", fCotation: "Listing", fDevise: "Reporting currency", fExercice: "Fiscal year end", fPerimetre: "Statements shown",
+      versionsTitre: "Dataset versions", aideVersions: "Each version is listed with its date and size. A version can be rebuilt exactly from the private archive (same fingerprint, same files).",
+      etapeCouverture: "Coverage report", aideCouverture: "For every bank with collected documents: years collected, years with figures, values read, automatically verified, to review, and the main reasons of missing values.",
+      cBanque: "Bank", cPays: "Country", cDocs: "Years collected", cAnnees: "Years with figures", cValeurs: "Values", cVerifiees: "Verified", cRelire: "To review", cRaisons: "Main reasons of missing values",
+      cBanques: "banks with documents", cAvecDonnees: "with figures", cTotalValeurs: "values read", cTotalVerifiees: "automatically verified",
+      etapeContact: "Report an error or request a variable",
+      aideContact: "Seen a wrong value, or need a variable that is not in the database? Tell us: every message is read and answered by e-mail.",
+      tErreur: "Report an error", tVariable: "Request a variable",
+      fEntite: "Bank (optional)", fVariable: "Variable and year (optional)", fMessage: "Your message (required)", fEmail: "Your e-mail (required, to answer you)",
+      fMention: "Your message is sent to the creator of the site (Formspree service).", fEnvoyer: "Send",
+      fMerci: "Thank you, your message has been sent. You will get an answer by e-mail.", fEchec: "The message could not be sent. Please try again later.",
+      fEmailFaux: "Please write a valid e-mail address so that we can answer you.", fVide: "Please write your message.",
+      etapeGuide: "Guide for researchers",
+      avFenetre: "Fiscal years end on different dates in this selection ({x}): the same « year » covers different periods.",
+      avIAH: "Islamic banks present investment accounts differently (equity of investment account holders under AAOIFI, liabilities or customer deposits under IFRS): deposit-based ratios are not directly comparable; see Financing to deposits and investment accounts.",
+      avTypes: "This selection mixes Islamic and conventional banks.",
+      avOpinion: "The auditor's opinion is not unqualified for: {x}.",
+      avCadre: "Accounting frameworks stated in the documents: {x}."
     }
   };
   var CLE_SEL = "fatma-research-selections";
@@ -76,7 +98,7 @@
   var sources = {}; D.sources.forEach(function (s) { sources[s.id] = s; });
   var toutesAnnees = Array.from(new Set(D.observations.map(function (o) { return o[C.annee]; }))).sort();
   var familles = []; D.variables.forEach(function (v) { if (familles.indexOf(v.famille) < 0) familles.push(v.famille); });
-  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios", "Audit": "Audit", "Sharia governance": "Sharia governance", "Islamic financing by contract": "Islamic financing by contract" } };
+  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios", "Audit": "Audit", "Sharia governance": "Sharia governance", "Islamic financing by contract": "Islamic financing by contract", "Islamic banking": "Islamic banking", "Governance": "Governance", "ESG": "ESG" } };
   function nomFamille(f) { return (NOMS_FAMILLES[langue] || {})[f] || f; }
 
   // ----- état de la sélection
@@ -119,7 +141,8 @@
       var nom = e.nom.en || e.nom.fr;
       boite.appendChild(el("label", { classe: "carte-entite" + (choisie ? " choisie" : ""), "for": "e-" + e.code }, [case_,
         el("div", {}, [el("div", { classe: "titre", texte: e.sigle + " — " + nom }),
-          el("div", { classe: "infos", texte: [e.nom.ar, nomPays(e.pays), e.devise, e.referentiel].filter(Boolean).join(" · ") })])]));
+          el("div", { classe: "infos", texte: [e.nom.ar, nomPays(e.pays), e.devise, e.referentiel].filter(Boolean).join(" · ") }),
+          el("a", { href: "#bank=" + e.code, classe: "petit-lien", texte: t("pageBanque") })])]));
     });
     $("aucune-entite").hidden = trouvees.length > 0;
   }
@@ -242,13 +265,7 @@
       r.appendChild(el("div", { classe: "tuile" }, [el("div", { classe: "chiffre", texte: String(x[0]) }), el("div", { classe: "quoi", texte: x[1] })]));
     });
     var av = $("avertissements"); av.textContent = "";
-    if (n) {
-      var choisies = etat.entites.map(function (c) { return entitesParCode[c]; }).filter(Boolean);
-      var devises = Array.from(new Set(choisies.map(function (e) { return e.devise; }))).sort();
-      var refs = Array.from(new Set(choisies.map(function (e) { return e.referentiel || "not stated"; }))).sort();
-      av.appendChild(el("p", { classe: "alerte", texte: t("avDevise").replace("{x}", devises.join(", ")) }));
-      av.appendChild(el("p", { classe: "alerte", texte: t("avReferentiel").replace("{x}", refs.join("; ")) }));
-    }
+    if (n) avertissements(etat.entites, etat.annees, etat.perimetre).forEach(function (x) { av.appendChild(el("p", { classe: "alerte", texte: x })); });
     if (retraite) av.appendChild(el("p", { classe: "alerte", texte: t("avRetraite") }));
     if (relire) av.appendChild(el("p", { classe: "alerte", texte: t("avRelire") }));
     var tab = $("tableau"); tab.textContent = "";
@@ -273,10 +290,41 @@
     tab.appendChild(corps);
   }
 
+  // ----- comparability warnings (spec: comparability warnings), from the data itself
+  function avertissements(codes, annees, perimetre) {
+    var choisies = codes.map(function (c) { return entitesParCode[c]; }).filter(Boolean), sortie = [];
+    if (!choisies.length) return sortie;
+    var devises = Array.from(new Set(choisies.map(function (e) { return e.devise; }).filter(Boolean))).sort();
+    sortie.push(t("avDevise").replace("{x}", devises.join(", ") || "not stated"));
+    var cadres = {};
+    choisies.forEach(function (e) { annees.forEach(function (a) {
+      var o = obs[e.code + "|" + perimetre + "|" + a + "|SHR.FRAMEWORK"];
+      if (o && o[C.valeur]) cadres[o[C.valeur]] = 1;
+      else if (e.referentiel) cadres[e.referentiel] = 1;
+    }); });
+    if (Object.keys(cadres).length) sortie.push(t("avCadre").replace("{x}", Object.keys(cadres).sort().join("; ")));
+    var fins = Array.from(new Set(choisies.map(function (e) { return e.fin_exercice || "12-31"; }))).sort();
+    if (fins.length > 1) sortie.push(t("avFenetre").replace("{x}", fins.join(", ")));
+    var islamiques = choisies.filter(function (e) { return (e.type || "").indexOf("banque_islamique") === 0; }).length;
+    if (islamiques && islamiques < choisies.length) sortie.push(t("avTypes"));
+    if (islamiques > 1) sortie.push(t("avIAH"));
+    var reserves = [];
+    choisies.forEach(function (e) { annees.forEach(function (a) {
+      var o = obs[e.code + "|" + perimetre + "|" + a + "|AUD.OPINION"];
+      if (o && o[C.valeur] && o[C.valeur] !== "unqualified") reserves.push(e.sigle + " " + a + " (" + o[C.valeur] + ")");
+    }); });
+    if (reserves.length) sortie.push(t("avOpinion").replace("{x}", reserves.join(", ")));
+    return sortie;
+  }
+
   // ----- fenêtre de détail d'une valeur (provenance)
   function nomStatut(s) { return { verifie_auto: t("sVerifie"), verifie_humain: t("sHumain"), a_relire: t("sRelire"), en_attente: t("sAttente"), manquant: t("sManquant") }[s] || s; }
   function nomOrigine(o) { return { rapport_de_l_annee: t("oAnnee"), colonne_comparative_du_rapport_suivant: t("oSuivant"), calcul: t("oCalcul"), texte_du_document: t("oTexte"), note_aux_etats_financiers: t("oNote") }[o] || o; }
-  function nomRaison(r) { if (!r) return ""; if (r.indexOf("donnee_de_calcul_absente") === 0) return t("rCalcul") + " (" + r.split(":")[1].trim() + ")"; return { ligne_absente_de_l_etat_publie: t("rLigne"), rapport_non_collecte: t("rRapport"), non_applicable: t("rNA"), auditor_report_not_in_document: t("rAudit"), not_stated_in_document: t("rNonDit"), contract_not_in_financing_note: t("rContrat"), financing_note_not_found: t("rNote") }[r] || r; }
+  function nomRaison(r) { if (!r) return ""; if (r.indexOf("donnee_de_calcul_absente") === 0) return t("rCalcul") + (r.split(":")[1] ? " (" + r.split(":")[1].trim() + ")" : ""); return { ligne_absente_de_l_etat_publie: t("rLigne"), rapport_non_collecte: t("rRapport"), non_applicable: t("rNA"), auditor_report_not_in_document: t("rAudit"), not_stated_in_document: t("rNonDit"), contract_not_in_financing_note: t("rContrat"), financing_note_not_found: t("rNote"),
+      key_audit_matters_not_numbered: "key audit matters are not numbered in the report (count not guessed)", no_key_audit_matters_section: "no key audit matters section in the report",
+      no_listed_topic_named: "no topic of the fixed list named", line_not_found_in_read_pages: "line not found in the pages read",
+      not_stated_in_one_sentence_of_the_pages_read: "not stated in one sentence of the pages read", annual_report_not_collected: "annual report not collected (financial statements only)",
+      no_sharia_board_report_in_document: "no Sharia board report in the document", conclusion_not_stated: "conclusion not stated", sharia_audit_not_mentioned: "Sharia audit not mentioned in the pages read" }[r] || r; }
   function montrerDetail(e, annee, c, o) {
     var v = vars[c];
     $("detail-titre").textContent = e.sigle + " · " + annee + " · " + (langue === "en" ? v.libelle_en : v.libelle_fr);
@@ -402,6 +450,7 @@
           el("div", { classe: "infos", texte: infos }),
           el("div", { classe: "statut", texte: statut })]);
         if (b.liste) li.appendChild(el("a", { href: b.liste, target: "_blank", rel: "noopener noreferrer", classe: "petit-lien", texte: t("rListe") }));
+        if (entitesParCode[b.code]) { li.appendChild(el("span", { texte: " · " })); li.appendChild(el("a", { href: "#bank=" + b.code, classe: "petit-lien", texte: t("pageBanque") })); }
         ul.appendChild(li);
       });
       det.appendChild(ul);
@@ -410,6 +459,148 @@
   }
   $("registre-recherche").addEventListener("input", dessinerRegistre);
 
+  // ----- bank page (#bank=CODE): key figures by year, text variables, coverage, documents
+  var CHIFFRES_CLES = ["BS.TOTAL_ASSETS", "BS.FINANCING_CUSTOMERS", "BS.LOANS_CUSTOMERS", "BS.DEPOSITS_CUSTOMERS", "BS.EQUITY_IAH",
+    "BS.TOTAL_EQUITY", "IS.FINANCING_INCOME", "IS.NET_INCOME", "CF.OPERATING", "RATIO.ROA", "RATIO.ROE", "RATIO.EQUITY_TO_ASSETS",
+    "RATIO.FINANCING_TO_FUNDING", "RATIO.COST_TO_INCOME_IFRS"];
+  var TEXTE_CLES = ["AUD.FIRM", "AUD.BIG4", "AUD.OPINION", "AUD.KAM", "AUD.KAM_COUNT", "AUD.KAM_TOPICS", "AUD.FEES", "SHR.SSB_REPORT",
+    "SHR.SSB_MEMBERS", "SHR.SSB_CONCLUSION", "SHR.SHARIA_AUDIT", "SHR.FRAMEWORK", "SHR.ZAKAT_BY", "GOV.BOARD_SIZE",
+    "GOV.BOARD_INDEPENDENT", "GOV.BOARD_WOMEN", "ESG.EMPLOYEES", "ESG.SDG_INDEX"];
+  function tableauFiche(tab, e, perim, annees, codes) {
+    tab.textContent = "";
+    var lignes = codes.filter(function (c) { return vars[c] && annees.some(function (a) { var o = obs[e.code + "|" + perim + "|" + a + "|" + c]; return o && o[C.valeur] !== null; }); });
+    var tr = el("tr", {}, [el("th", { classe: "fixe", texte: "" })]);
+    annees.forEach(function (a) { tr.appendChild(el("th", { texte: String(a) })); });
+    tab.appendChild(el("thead", {}, [tr]));
+    var corps = el("tbody");
+    lignes.forEach(function (c) {
+      var ligne = el("tr", {}, [el("td", { classe: "fixe", texte: vars[c].libelle_en })]);
+      annees.forEach(function (a) {
+        var o = obs[e.code + "|" + perim + "|" + a + "|" + c];
+        var td = el("td", { classe: "valeur " + classeStatut(o), tabindex: "0", texte: format(o ? o[C.valeur] : null, c) });
+        td.addEventListener("click", function () { montrerDetail(e, a, c, o); });
+        ligne.appendChild(td);
+      });
+      corps.appendChild(ligne);
+    });
+    tab.appendChild(corps);
+    return lignes.length;
+  }
+  function dessinerFiche(code) {
+    var e = entitesParCode[code];
+    if (!e) return false;
+    var perims = ["consolide", "individuel"].filter(function (p) { return D.observations.some(function (o) { return o[C.entite] === code && o[C.perimetre] === p && o[C.valeur] !== null && o[C.origine] !== "calcul"; }); });
+    var perim = perims[0] || "consolide";
+    var annees = Array.from(new Set(D.observations.filter(function (o) { return o[C.entite] === code && o[C.perimetre] === perim && o[C.valeur] !== null; }).map(function (o) { return o[C.annee]; }))).sort();
+    $("fiche-titre").textContent = (e.nom.en || e.nom.fr || e.sigle) + (e.nom.ar ? " — " + e.nom.ar : "");
+    var infos = $("fiche-infos"); infos.textContent = "";
+    [[t("cPays"), nomPays(e.pays)], [t("fRegulateur"), e.regulateur], [t("fCotation"), e.cotee ? (e.bourse || "") + (e.ticker ? " " + e.ticker : "") : e.cotee === false ? t("rNonCotee") : ""],
+     [t("fDevise"), e.devise], [t("fExercice"), e.fin_exercice], [t("fPerimetre"), t(perim)]].forEach(function (x) {
+      if (x[1]) infos.appendChild(el("div", {}, [el("strong", { texte: x[0] + ": " }), el("span", { texte: x[1] })]));
+    });
+    var av = $("fiche-avertissements"); av.textContent = "";
+    avertissements([code], annees, perim).forEach(function (x) { av.appendChild(el("p", { classe: "alerte", texte: x })); });
+    tableauFiche($("fiche-chiffres"), e, perim, annees, CHIFFRES_CLES);
+    tableauFiche($("fiche-texte"), e, perim, annees, TEXTE_CLES);
+    var c = (D.couverture || []).filter(function (x) { return x.code === code; })[0];
+    var fc = $("fiche-couverture"); fc.textContent = "";
+    if (c) fc.appendChild(el("p", { texte: t("cDocs") + ": " + (c.annees_documents.join(", ") || "—") + " · " + t("cAnnees") + ": " + (c.annees_valeurs.join(", ") || "—") +
+      " · " + c.valeurs + " " + t("cValeurs").toLowerCase() + ", " + c.verifiees + " " + t("verifiees") + ", " + c.a_relire + " " + t("aRelire") }));
+    var ul = $("fiche-documents"); ul.textContent = "";
+    D.sources.filter(function (s) { return s.entite === code; }).sort(function (a, b) { return a.periode < b.periode ? 1 : -1; }).forEach(function (s) {
+      ul.appendChild(el("li", {}, [el("a", { href: s.url, target: "_blank", rel: "noopener noreferrer", texte: s.titre })]));
+    });
+    $("fiche-signaler").onclick = function () { $("f-entite").value = (e.sigle || "") + " — " + (e.nom.en || e.nom.fr || ""); choisirType("erreur"); location.hash = "#contact"; };
+    return true;
+  }
+  function route() {
+    var m = /^#bank=([A-Z]{2}\.[A-Z0-9]+)$/.exec(location.hash);
+    var ok = m && dessinerFiche(m[1]);
+    $("fiche").hidden = !ok;
+    document.querySelectorAll("main > section.etape, main > .intro").forEach(function (n) { n.hidden = !!ok; });
+    if (ok) { try { window.scrollTo(0, 0); } catch (e) { /* no scrolling available: nothing to do */ } }
+    else if (location.hash.length > 1 && !m) { var cible = document.getElementById(location.hash.slice(1)); if (cible) cible.scrollIntoView(); }
+  }
+  window.addEventListener("hashchange", route);
+
+  // ----- 8. coverage report
+  function dessinerCouverture() {
+    var L = D.couverture || [], tab = $("couverture-table"), r = $("couverture-resume");
+    r.textContent = ""; tab.textContent = "";
+    [[L.length, t("cBanques")], [L.filter(function (x) { return x.valeurs > 0; }).length, t("cAvecDonnees")],
+     [L.reduce(function (s, x) { return s + x.valeurs; }, 0), t("cTotalValeurs")], [L.reduce(function (s, x) { return s + x.verifiees; }, 0), t("cTotalVerifiees")]
+    ].forEach(function (x) { r.appendChild(el("div", { classe: "tuile" }, [el("div", { classe: "chiffre", texte: String(x[0]) }), el("div", { classe: "quoi", texte: x[1] })])); });
+    var tr = el("tr", {});
+    ["cBanque", "cPays", "cDocs", "cAnnees", "cValeurs", "cVerifiees", "cRelire", "cRaisons"].forEach(function (k) { tr.appendChild(el("th", { texte: t(k) })); });
+    tab.appendChild(el("thead", {}, [tr]));
+    var corps = el("tbody");
+    L.slice().sort(function (a, b) { return b.verifiees - a.verifiees || (a.nom < b.nom ? -1 : 1); }).forEach(function (x) {
+      var nom = entitesParCode[x.code] ? el("a", { href: "#bank=" + x.code, texte: x.nom }) : el("span", { texte: x.nom });
+      corps.appendChild(el("tr", {}, [el("td", {}, [nom]), el("td", { texte: nomPays(x.pays) }),
+        el("td", { texte: x.annees_documents.join(", ") }), el("td", { texte: x.annees_valeurs.join(", ") || "—" }),
+        el("td", { texte: String(x.valeurs) }), el("td", { texte: String(x.verifiees) }), el("td", { texte: String(x.a_relire) }),
+        el("td", { texte: x.raisons.map(function (r) { return nomRaison(r[0]) + " (" + r[1] + ")"; }).join("; ") })]));
+    });
+    tab.appendChild(corps);
+  }
+
+  // ----- dataset versions
+  function dessinerVersions() {
+    var ul = $("versions"); ul.textContent = "";
+    (D.versions || []).slice().reverse().forEach(function (v) {
+      ul.appendChild(el("li", { texte: v.version + " — " + v.date + " — " + v.observations + " values, " + v.entites + " companies" + (v.version === D.version ? " (current)" : "") }));
+    });
+  }
+
+  // ----- 9. report an error / request a variable (common form of Ahmed's sites, Formspree; e-mail required)
+  var typeMessage = "erreur";
+  function choisirType(x) { typeMessage = x; dessinerTypes(); }
+  function dessinerTypes() {
+    var boite = $("type-message"); boite.textContent = "";
+    [["erreur", t("tErreur")], ["variable", t("tVariable")]].forEach(function (x) {
+      var b = el("button", { type: "button", classe: "puce", role: "radio", "aria-checked": String(typeMessage === x[0]), texte: x[1] });
+      b.addEventListener("click", function () { choisirType(x[0]); });
+      boite.appendChild(b);
+    });
+  }
+  $("formulaire").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var retour = $("f-retour"), email = $("f-email").value.trim(), message = $("f-message").value.trim();
+    retour.hidden = false;
+    if (!message) { retour.textContent = t("fVide"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { retour.textContent = t("fEmailFaux"); return; }
+    if ($("f-gotcha").value) return;            // robot
+    var bout = $("f-envoyer"); bout.disabled = true;
+    fetch("https://formspree.io/f/mwlpakqj", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ site: "FATMA Research Data (data.clicvia.com)", page: location.href, type: typeMessage === "erreur" ? "report an error" : "request a variable",
+        entite: $("f-entite").value.trim(), variable: $("f-variable").value.trim(), message: message, email: email, version: D.version }) })
+      .then(function (r) { retour.textContent = r.ok ? t("fMerci") : t("fEchec"); if (r.ok) { $("f-message").value = ""; } })
+      .catch(function () { retour.textContent = t("fEchec"); })
+      .then(function () { bout.disabled = false; });
+  });
+
+  // ----- 10. guide for researchers (one page)
+  var GUIDE = [
+    ["What is in the database", "Financial statements of Islamic banks taken from their official documents (balance sheet, income statement, cash flows, off-balance sheet), audit and Sharia governance facts read in the auditor's and Sharia board's reports, governance and ESG facts stated in the annual reports, and the world register of Islamic banks with the progress of the collection."],
+    ["How to build a dataset", "1. Choose companies (search by name or ticker, filter by country). 2. Choose consolidated or standalone statements. 3. Choose years. 4. Choose variables (each has a definition). 5. Check the preview: tap a value to see its document, page and original label. 6. Download Excel or CSV for your selection, or the full dataset in Excel and Stata."],
+    ["What the colours and statuses mean", "Automatically verified: the value passed the accounting checks (totals, balance sheet equality, chain of the income statement, cash flows, consistency with the following year). It is NOT a human verification. To review: a check failed or the figure was hard to read (scans). Awaiting checks: no check could test it yet. Restated: the following year's report gives another figure; the original is kept and the restated value is shown next to it."],
+    ["Missing values", "A missing value is always empty, never 0, and always has a reason: line not present in the published statement, document not collected, not applicable, value needed for a ratio missing, not stated in the document."],
+    ["Units", "Amounts are in each company's own reporting currency, as published (the downloads give them in units; the screen shows thousands). No currency conversion. Ratios are decimals in the files and percentages on screen. Text variables (audit firm, opinion, framework) are given as read."],
+    ["Comparing banks", "Read the warnings above the preview: currencies, accounting frameworks (AAOIFI, IFRS, local), fiscal year ends, Islamic vs conventional banks, investment accounts presented differently, qualified audit opinions."],
+    ["Text variables", "Audit, Sharia, governance and ESG variables are read with fixed rules in the text (no AI): each keeps its page and a short extract. Counts are given only when a sentence states them (never added up from lists). The SDG disclosure index (0-8) measures disclosure, not performance; its scale is version 1, to be confirmed against the specification."],
+    ["Citing the data and versions", "Cite the dataset version shown at the bottom of the page (for example FATMA Research Data, version vYYYYMMDD-xxxxxx). Every version can be rebuilt exactly from the archive. Each value also gives the official document and page it comes from."],
+    ["Errors and requests", "Use « Report an error or request a variable »: give the bank, the variable and the year if you can. Answers come by e-mail."]
+  ];
+  function dessinerGuide() {
+    var g = $("guide-contenu"); g.textContent = "";
+    GUIDE.forEach(function (x) { g.appendChild(el("h3", { texte: x[0] })); g.appendChild(el("p", { texte: x[1] })); });
+  }
+
   tout();
   dessinerRegistre();
+  dessinerCouverture();
+  dessinerVersions();
+  dessinerTypes();
+  dessinerGuide();
+  route();
 })();

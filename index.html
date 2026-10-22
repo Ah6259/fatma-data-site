@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://formspree.io; object-src 'none'; base-uri 'self'; form-action https://formspree.io">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>FATMA Research Data</title>
 <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-<link rel="stylesheet" href="assets/style.css?v=2">
+<link rel="stylesheet" href="assets/style.css?v=3">
 </head>
-<body data-empreinte="eb569e6f0cbc">
+<body data-empreinte="3e85a352250b">
 <header class="entete">
   <div class="marque">
     <img src="assets/logo.svg" alt="" width="36" height="36">
@@ -23,6 +23,27 @@
 
 <main>
   <p class="intro" data-t="intro"></p>
+  <nav class="menu" aria-label="Pages">
+    <a href="#" data-t="mDonnees"></a> · <a href="#coverage" data-t="mCouverture"></a> · <a href="#guide" data-t="mGuide"></a> ·
+    <a href="#contact" data-t="mContact"></a>
+  </nav>
+
+  <section class="fiche" id="fiche" hidden aria-labelledby="fiche-titre">
+    <p><a href="#" class="petit-lien" data-t="retour"></a></p>
+    <h2 id="fiche-titre"></h2>
+    <div id="fiche-infos" class="infos"></div>
+    <div id="fiche-avertissements"></div>
+    <h3 data-t="fChiffres"></h3>
+    <div class="tableau-cadre"><table id="fiche-chiffres"></table></div>
+    <p class="aide" data-t="aideCellule"></p>
+    <h3 data-t="fTexte"></h3>
+    <div class="tableau-cadre"><table id="fiche-texte"></table></div>
+    <h3 data-t="fCouverture"></h3>
+    <div id="fiche-couverture"></div>
+    <h3 data-t="fDocuments"></h3>
+    <ul id="fiche-documents" class="liste-liens"></ul>
+    <p><button type="button" class="bouton" id="fiche-signaler" data-t="signalerBanque"></button></p>
+  </section>
 
   <section class="etape" aria-labelledby="t-entites">
     <h2 id="t-entites"><span class="num">1</span><span data-t="etapeEntites"></span></h2>
@@ -75,6 +96,9 @@
     <p class="aide" data-t="aideTelechargement"></p>
     <h3 data-t="jeuComplet"></h3>
     <ul id="jeux-complets" class="liste-liens"></ul>
+    <h3 data-t="versionsTitre"></h3>
+    <p class="aide" data-t="aideVersions"></p>
+    <ul id="versions" class="liste-liens"></ul>
     <h3 data-t="mesSelections"></h3>
     <div class="boutons">
       <input type="text" id="nom-selection" class="champ court" maxlength="60" data-t-placeholder="nomSelection">
@@ -90,6 +114,38 @@
     <div id="registre-resume" class="tuiles"></div>
     <input type="search" id="registre-recherche" class="champ" autocomplete="off" data-t-placeholder="rechercheRegistre">
     <div id="registre-liste"></div>
+  </section>
+
+  <section class="etape" aria-labelledby="t-couverture" id="coverage">
+    <h2 id="t-couverture"><span class="num">8</span><span data-t="etapeCouverture"></span></h2>
+    <p class="aide" data-t="aideCouverture"></p>
+    <div id="couverture-resume" class="tuiles"></div>
+    <div class="tableau-cadre"><table id="couverture-table"></table></div>
+  </section>
+
+  <section class="etape" aria-labelledby="t-contact" id="contact">
+    <h2 id="t-contact"><span class="num">9</span><span data-t="etapeContact"></span></h2>
+    <p class="aide" data-t="aideContact"></p>
+    <form id="formulaire" novalidate>
+      <div class="puces" id="type-message" role="radiogroup"></div>
+      <label for="f-entite" data-t="fEntite"></label>
+      <input type="text" id="f-entite" class="champ" maxlength="80">
+      <label for="f-variable" data-t="fVariable"></label>
+      <input type="text" id="f-variable" class="champ" maxlength="120">
+      <label for="f-message" data-t="fMessage"></label>
+      <textarea id="f-message" class="champ" rows="5" maxlength="1500" required></textarea>
+      <label for="f-email" data-t="fEmail"></label>
+      <input type="email" id="f-email" class="champ" maxlength="120" required autocomplete="email">
+      <input type="text" id="f-gotcha" name="_gotcha" class="piege" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="aide" data-t="fMention"></p>
+      <button type="submit" class="bouton principal" id="f-envoyer" data-t="fEnvoyer"></button>
+      <p id="f-retour" class="confirmation" role="status" hidden></p>
+    </form>
+  </section>
+
+  <section class="etape" aria-labelledby="t-guide" id="guide">
+    <h2 id="t-guide"><span class="num">10</span><span data-t="etapeGuide"></span></h2>
+    <div id="guide-contenu"></div>
   </section>
 </main>
 
@@ -110,7 +166,7 @@
 
 <script src="assets/son.js?v=1"></script>
 <script src="assets/lib/xlsx.full.min.js?v=0.20.3"></script>
-<script src="donnees/donnees.js?v=eb569e6f0cbc"></script>
-<script src="assets/app.js?v=4"></script>
+<script src="donnees/donnees.js?v=3e85a352250b"></script>
+<script src="assets/app.js?v=6"></script>
 </body>
 </html>
