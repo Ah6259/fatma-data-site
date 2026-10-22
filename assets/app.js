@@ -611,7 +611,7 @@
       corps.appendChild(el("tr", {}, [el("td", { texte: x.id }), el("td", { texte: e.sigle + " · " + t(x.perimetre) }), el("td", { texte: String(x.annee) }),
         el("td", { texte: x.libelle + " (" + (vars[x.variable] ? vars[x.variable].libelle_en : x.variable) + ")" }),
         el("td", {}, [s ? el("a", { href: s.url, target: "_blank", rel: "noopener noreferrer", texte: s.titre + " — p. " + x.page }) : el("span", { texte: "p. " + x.page })]),
-        el("td", {}, [champ]), el("td", {}, [unite]), el("td", {}, [absent])]));
+        el("td", {}, [champ]), el("td", {}, [unite]), el("td", {}, [el("label", {}, [absent, el("span", { texte: " " + t("refIntrouvable") })])])]));
     });
     tab.appendChild(corps);
   }
