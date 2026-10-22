@@ -43,6 +43,11 @@
       rStatutDonnees: "figures available", rStatutDocs: "documents collected, extraction pending", rStatutAttente: "documents not yet collected",
       rStatutSanctions: "collection deferred (sanctions check)", rAnnees: "years",
       rNA: "not applicable to this type of company",
+      oTexte: "read in the text of the document (auditor's report, basis of preparation)",
+      rAudit: "the collected document does not contain the auditor's report",
+      rNonDit: "not stated in the collected document",
+      oNote: "read in the financing note of the financial statements",
+      rContrat: "this contract is not shown in the financing note", rNote: "financing note not found in the document",
       avRetraite: "Some values were restated by the company the following year: the original value is kept, the restated value is shown next to it.",
       avRelire: "Some values are “to review”: they did not pass all automatic checks.",
       ouvrirDocument: "open the official page"
@@ -71,7 +76,7 @@
   var sources = {}; D.sources.forEach(function (s) { sources[s.id] = s; });
   var toutesAnnees = Array.from(new Set(D.observations.map(function (o) { return o[C.annee]; }))).sort();
   var familles = []; D.variables.forEach(function (v) { if (familles.indexOf(v.famille) < 0) familles.push(v.famille); });
-  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios" } };
+  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios", "Audit": "Audit", "Sharia governance": "Sharia governance", "Islamic financing by contract": "Islamic financing by contract" } };
   function nomFamille(f) { return (NOMS_FAMILLES[langue] || {})[f] || f; }
 
   // ----- état de la sélection
@@ -206,6 +211,8 @@
   var ESP = " ";   // espace fine insécable entre les milliers (règle commune § 30)
   function format(v, variable) {
     if (v === null || v === undefined) return "—";
+    if (vars[variable].unite === "texte" || vars[variable].unite === "nombre") return String(v);
+    if (vars[variable].unite === "binaire") return Number(v) === 1 ? "Yes" : "No";
     if (vars[variable].unite === "ratio") return (v * 100).toFixed(2).replace(".", langue === "fr" ? "," : ".") + ESP + "%";
     var k = Math.round(v / 1000), s = Math.abs(k).toString().replace(/\B(?=(\d{3})+(?!\d))/g, langue === "fr" ? ESP : ",");
     return (k < 0 ? "−" : "") + s;
@@ -268,8 +275,8 @@
 
   // ----- fenêtre de détail d'une valeur (provenance)
   function nomStatut(s) { return { verifie_auto: t("sVerifie"), verifie_humain: t("sHumain"), a_relire: t("sRelire"), en_attente: t("sAttente"), manquant: t("sManquant") }[s] || s; }
-  function nomOrigine(o) { return { rapport_de_l_annee: t("oAnnee"), colonne_comparative_du_rapport_suivant: t("oSuivant"), calcul: t("oCalcul") }[o] || o; }
-  function nomRaison(r) { if (!r) return ""; if (r.indexOf("donnee_de_calcul_absente") === 0) return t("rCalcul") + " (" + r.split(":")[1].trim() + ")"; return { ligne_absente_de_l_etat_publie: t("rLigne"), rapport_non_collecte: t("rRapport"), non_applicable: t("rNA") }[r] || r; }
+  function nomOrigine(o) { return { rapport_de_l_annee: t("oAnnee"), colonne_comparative_du_rapport_suivant: t("oSuivant"), calcul: t("oCalcul"), texte_du_document: t("oTexte"), note_aux_etats_financiers: t("oNote") }[o] || o; }
+  function nomRaison(r) { if (!r) return ""; if (r.indexOf("donnee_de_calcul_absente") === 0) return t("rCalcul") + " (" + r.split(":")[1].trim() + ")"; return { ligne_absente_de_l_etat_publie: t("rLigne"), rapport_non_collecte: t("rRapport"), non_applicable: t("rNA"), auditor_report_not_in_document: t("rAudit"), not_stated_in_document: t("rNonDit"), contract_not_in_financing_note: t("rContrat"), financing_note_not_found: t("rNote") }[r] || r; }
   function montrerDetail(e, annee, c, o) {
     var v = vars[c];
     $("detail-titre").textContent = e.sigle + " · " + annee + " · " + (langue === "en" ? v.libelle_en : v.libelle_fr);
@@ -281,7 +288,7 @@
       else dd.textContent = valeur;
       dl.appendChild(el("dt", { texte: t(k) })); dl.appendChild(dd);
     }
-    ajouter("dValeur", o && o[C.valeur] !== null ? format(o[C.valeur], c) + (v.unite === "ratio" ? "" : " (" + e.devise + " thousands)") : "—");
+    ajouter("dValeur", o && o[C.valeur] !== null ? format(o[C.valeur], c) + (v.unite === "devise" ? " (" + e.devise + " thousands)" : "") : "—");
     ajouter("dStatut", nomStatut(o ? o[C.statut] : "manquant"));
     if (o && o[C.raison_manquant]) ajouter("dRaison", nomRaison(o[C.raison_manquant]));
     if (o && o[C.libelle_origine]) ajouter("dLibelle", o[C.libelle_origine]);
@@ -306,7 +313,7 @@
     var lignes = [["entity", "scope", "year", "variable", "value", "unit", "status", "missing_reason", "origin", "source_id", "page", "label_as_reported", "restated_value", "source_url"]];
     lignesSelection().forEach(function (l) { variablesChoisies().forEach(function (c) {
       var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c], s = o && sources[o[C.id_source]];
-      lignes.push([l[0], etat.perimetre, l[1], c, o ? o[C.valeur] : null, vars[c].unite === "ratio" ? "ratio" : (entitesParCode[l[0]] || {}).devise,
+      lignes.push([l[0], etat.perimetre, l[1], c, o ? o[C.valeur] : null, vars[c].unite === "devise" ? (entitesParCode[l[0]] || {}).devise : vars[c].unite,
         o ? o[C.statut] : "manquant", o ? o[C.raison_manquant] : "rapport_non_collecte", o ? o[C.origine] : "", o ? o[C.id_source] : "",
         o ? o[C.page] : "", o ? o[C.libelle_origine] : "", o ? o[C.valeur_retraitee] : null, s ? s.url : ""]);
     }); });
