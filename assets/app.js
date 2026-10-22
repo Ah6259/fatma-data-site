@@ -20,7 +20,7 @@
       uniteNote: "Amounts in thousands of each company's own reporting currency (shown next to the company), as in the published statements. Ratios in %.",
       rienAAfficher: "Choose at least one company, one year and one variable.",
       entreprise: "Company", annee: "Year",
-      etapeTelecharger: "Download", telechargerExcel: "Excel (my selection)", telechargerCsv: "CSV long format (my selection)", telechargerStata: "Stata do-file (my selection)", telechargerJournal: "Selection log (sample)", telechargerCitation: "How to cite (BibTeX, RIS, sources)",
+      etapeTelecharger: "Download", telechargerExcel: "Excel (my selection)", telechargerCsv: "CSV long format (my selection)", telechargerStata: "Stata do-file (my selection)", fTitre: "Feasibility (whole database)", fPanel: "Balanced panel: {n} companies have all {v} chosen variables for all {a} chosen years ({w} with automatically verified values only).", fPays: "Countries: {p}.", fParAnnee: "Companies with all the variables, by year —", fUnAn: "{k} companies have them for at least one year.", fChoisir: "Select these {n} companies", fAucun: "No company has all these variables for all these years: remove a variable or a year.", rTitre: "Build a ratio", rAide: "Divide one published amount by another (for example net income / total assets). It is computed for every company and year, kept on this device, and added to your downloads with its formula; it is verified only when both parts are.", rAjouter: "Add this ratio", rDeux: "Choose two different amounts.", rAjoute: "Added to « My variables »: {c}", dTitre: "Disclosure explorer", dAide: "How many companies disclose each item, year by year: companies where the item was found / companies with at least one value that year (same scope as step 2). Click a cell to list the companies.", dListe: "{v} in {a}: ", telechargerJournal: "Selection log (sample)", telechargerCitation: "How to cite (BibTeX, RIS, sources)",
       modeGuide: "Guided: key variables", modeAvance: "Advanced: all variables",
       aideGuide: "Guided mode shows the key variables only (size, financing, deposits, equity, income, main ratios, audit, Sharia). Switch to Advanced to see every variable.",
       aideAvance: "Advanced mode shows every variable, grouped by family.",
@@ -188,7 +188,7 @@
     var boite = $("perimetres"); boite.textContent = "";
     ["consolide", "individuel"].forEach(function (p) {
       var b = el("button", { type: "button", classe: "puce", role: "radio", "aria-checked": String(etat.perimetre === p), texte: t(p) });
-      b.addEventListener("click", function () { etat.perimetre = p; dessinerPerimetres(); dessinerApercu(); });
+      b.addEventListener("click", function () { etat.perimetre = p; dessinerPerimetres(); dessinerApercu(); dessinerDivulgation(); });
       boite.appendChild(b);
     });
   }
@@ -224,7 +224,7 @@
   function dessinerVariables() {
     var boite = $("familles"); boite.textContent = "";
     familles.forEach(function (f) {
-      var liste = D.variables.filter(function (v) { return v.famille === f && (mode === "avance" || CLES_GUIDE.indexOf(v.code) >= 0); });
+      var liste = D.variables.filter(function (v) { return v.famille === f && (mode === "avance" || v.utilisateur || CLES_GUIDE.indexOf(v.code) >= 0); });
       if (!liste.length) return;
       var n = liste.filter(function (v) { return etat.variables.indexOf(v.code) >= 0; }).length;
       var ouverte = !!etat.ouvertes[f];
@@ -252,6 +252,58 @@
     });
   }
   function bouton(texte, action) { var b = el("button", { type: "button", classe: "lien", texte: texte }); b.addEventListener("click", action); return b; }
+
+  // ----- variable builder: a ratio A / B of two published amounts, computed in the browser for every company-year.
+  // Its status is « verified » only when both parts are; a missing part gives a missing value with its reason.
+  var CLE_RATIOS = "fatma-ratios", FAMILLE_UTIL = "My variables";
+  function creerRatio(a, b) {
+    var code = "USER." + a.split(".").slice(1).join("_") + "_OVER_" + b.split(".").slice(1).join("_");
+    if (vars[code] || !vars[a] || !vars[b] || a === b) return code;
+    var v = { code: code, famille: FAMILLE_UTIL, libelle_en: vars[a].libelle_en + " / " + vars[b].libelle_en,
+      libelle_fr: vars[a].libelle_fr + " / " + vars[b].libelle_fr, unite: "ratio", type: "calcule", formule: a + " / " + b,
+      definition_en: "Built on this site by the user: " + a + " divided by " + b + " (same company, scope and year).",
+      definition_fr: "Construit sur ce site par l'utilisateur : " + a + " divisé par " + b + " (même entreprise, périmètre et année).",
+      version: "user", utilisateur: true };
+    D.variables.push(v); vars[code] = v;
+    if (familles.indexOf(FAMILLE_UTIL) < 0) familles.push(FAMILLE_UTIL);
+    var cles = {};
+    D.observations.forEach(function (o) { if (o[C.variable] === a || o[C.variable] === b) cles[o[C.entite] + "|" + o[C.perimetre] + "|" + o[C.annee]] = 1; });
+    Object.keys(cles).forEach(function (k) {
+      var oa = obs[k + "|" + a], ob = obs[k + "|" + b], p = k.split("|"), n = new Array(D.colonnes_observations.length).fill(null);
+      n[C.entite] = p[0]; n[C.perimetre] = p[1]; n[C.annee] = Number(p[2]); n[C.variable] = code; n[C.origine] = "calcul";
+      n[C.libelle_origine] = a + " / " + b;
+      if (present(oa) && present(ob) && Number(ob[C.valeur]) !== 0 && !isNaN(Number(oa[C.valeur])) && !isNaN(Number(ob[C.valeur]))) {
+        n[C.valeur] = Number(oa[C.valeur]) / Number(ob[C.valeur]);
+        n[C.statut] = oa[C.statut] === "verifie_auto" && ob[C.statut] === "verifie_auto" ? "verifie_auto" : "a_relire";
+        n[C.id_source] = oa[C.id_source]; n[C.page] = oa[C.page];
+      } else {
+        n[C.statut] = "manquant";
+        n[C.raison_manquant] = present(ob) && Number(ob[C.valeur]) === 0 ? "denominator_zero" : "component_missing";
+      }
+      obs[k + "|" + code] = n;
+    });
+    return code;
+  }
+  function ratiosEnregistres() { try { return JSON.parse(lire(CLE_RATIOS) || "[]"); } catch (e) { return []; } }
+  ratiosEnregistres().forEach(function (r) { creerRatio(r[0], r[1]); });
+  function dessinerConstructeur() {
+    var montants = D.variables.filter(function (v) { return v.unite === "devise"; });
+    ["r-num", "r-den"].forEach(function (id) {
+      var s = $(id); s.textContent = "";
+      montants.forEach(function (v) { s.appendChild(el("option", { value: v.code, texte: (langue === "en" ? v.libelle_en : v.libelle_fr) + " (" + v.code + ")" })); });
+    });
+    if (montants.length > 1) $("r-den").selectedIndex = 1;
+  }
+  $("r-ajouter").addEventListener("click", function () {
+    var a = $("r-num").value, b = $("r-den").value;
+    if (!a || !b || a === b) { $("r-retour").hidden = false; $("r-retour").textContent = t("rDeux"); return; }
+    var code = creerRatio(a, b), l = ratiosEnregistres();
+    if (!l.some(function (r) { return r[0] === a && r[1] === b; })) { l.push([a, b]); ecrire(CLE_RATIOS, JSON.stringify(l)); }
+    if (etat.variables.indexOf(code) < 0) etat.variables.push(code);
+    etat.ouvertes[FAMILLE_UTIL] = true;
+    $("r-retour").hidden = false; $("r-retour").textContent = t("rAjoute").replace("{c}", code);
+    dessinerVariables(); dessinerApercu();
+  });
 
   // ----- 5. aperçu
   var ESP = " ";   // espace fine insécable entre les milliers (règle commune § 30)
@@ -293,6 +345,7 @@
     if (retraite) av.appendChild(el("p", { classe: "alerte", texte: t("avRetraite") }));
     if (relire) av.appendChild(el("p", { classe: "alerte", texte: t("avRelire") }));
     var tab = $("tableau"); tab.textContent = "";
+    dessinerFaisabilite(cols);
     $("unite-note").textContent = n ? t("uniteNote") : t("rienAAfficher");
     if (!n) return;
     var tr = el("tr", {}, [el("th", { classe: "fixe", texte: t("entreprise") + " · " + t("annee") })]);
@@ -312,6 +365,40 @@
       corps.appendChild(ligne);
     });
     tab.appendChild(corps);
+  }
+
+  // ----- feasibility assistant (spec § 20-30): with the chosen variables and years, which companies of the WHOLE
+  // database (countries chosen above, if any) have every value? A balanced panel = all variables, all years.
+  function present(o) { return o && o[C.statut] !== "manquant" && o[C.valeur] !== null && o[C.valeur] !== undefined && o[C.valeur] !== ""; }
+  function faisabilite(cols, annees, perimetre, pays) {
+    var r = { complets: [], verifies: [], unAn: 0, parAnnee: {} };
+    annees.forEach(function (a) { r.parAnnee[a] = 0; });
+    D.entites.forEach(function (e) {
+      if (pays.length && pays.indexOf(e.pays) < 0) return;
+      var nOk = 0, nVerif = 0;
+      annees.forEach(function (a) {
+        var tous = cols.every(function (c) { return present(obs[e.code + "|" + perimetre + "|" + a + "|" + c]); });
+        if (!tous) return;
+        nOk++; r.parAnnee[a]++;
+        if (cols.every(function (c) { return obs[e.code + "|" + perimetre + "|" + a + "|" + c][C.statut] === "verifie_auto"; })) nVerif++;
+      });
+      if (nOk) r.unAn++;
+      if (nOk === annees.length) r.complets.push(e.code);
+      if (nVerif === annees.length) r.verifies.push(e.code);
+    });
+    return r;
+  }
+  function dessinerFaisabilite(cols) {
+    var boite = $("faisabilite"); boite.textContent = "";
+    if (!cols.length || !etat.annees.length) return;
+    var f = faisabilite(cols, etat.annees, etat.perimetre, etat.pays);
+    boite.appendChild(el("h3", { texte: t("fTitre") }));
+    boite.appendChild(el("p", { texte: t("fPanel").replace("{n}", f.complets.length).replace("{v}", cols.length).replace("{a}", etat.annees.length)
+      .replace("{w}", f.verifies.length) + (etat.pays.length ? " " + t("fPays").replace("{p}", etat.pays.map(nomPays).join(", ")) : "") }));
+    boite.appendChild(el("p", { classe: "aide", texte: t("fParAnnee") + " " + etat.annees.map(function (a) { return a + ": " + f.parAnnee[a]; }).join(" · ")
+      + ". " + t("fUnAn").replace("{k}", f.unAn) }));
+    if (f.complets.length) boite.appendChild(el("p", {}, [bouton(t("fChoisir").replace("{n}", f.complets.length), function () { etat.entites = f.complets.slice(); tout(); })]));
+    else boite.appendChild(el("p", { classe: "alerte", texte: t("fAucun") }));
   }
 
   // ----- comparability warnings (spec: comparability warnings), from the data itself
@@ -553,7 +640,7 @@
   $("recherche").addEventListener("input", dessinerEntites);
   $("annees-toutes").addEventListener("click", function () { etat.annees = toutesAnnees.slice(); dessinerAnnees(); dessinerApercu(); });
   $("annees-5").addEventListener("click", function () { etat.annees = toutesAnnees.slice(-5); dessinerAnnees(); dessinerApercu(); });
-  function tout() { traduire(); dessinerPays(); dessinerEntites(); dessinerPerimetres(); dessinerAnnees(); dessinerModes(); dessinerVariables(); dessinerApercu(); dessinerJeux(); dessinerSelections(); }
+  function tout() { traduire(); dessinerConstructeur(); dessinerPays(); dessinerEntites(); dessinerPerimetres(); dessinerAnnees(); dessinerModes(); dessinerVariables(); dessinerApercu(); dessinerJeux(); dessinerSelections(); }
   // ----- 7. world register of Islamic banks (coverage of the collection)
   function dessinerRegistre() {
     var R = D.registre || [];
@@ -781,9 +868,48 @@
     GUIDE.forEach(function (x) { g.appendChild(el("h3", { texte: x[0] })); g.appendChild(el("p", { texte: x[1] })); });
   }
 
+  // ----- disclosure explorer: for the text / governance families, companies where each item was found, by year
+  var FAMILLES_DIVULGATION = ["Audit", "Sharia governance", "Governance", "ESG", "Ownership", "Capital and risk"];
+  var familleDiv = FAMILLES_DIVULGATION[0];
+  function dessinerDivulgation() {
+    var puces = $("divulgation-familles"); puces.textContent = "";
+    FAMILLES_DIVULGATION.filter(function (f) { return familles.indexOf(f) >= 0; }).forEach(function (f) {
+      var b = el("button", { type: "button", classe: "puce" + (f === familleDiv ? " active" : ""), role: "radio", "aria-checked": String(f === familleDiv), texte: nomFamille(f) });
+      b.addEventListener("click", function () { familleDiv = f; $("divulgation-liste").textContent = ""; dessinerDivulgation(); });
+      puces.appendChild(b);
+    });
+    var perimetre = etat.perimetre, avecDonnees = {}, trouve = {};
+    D.observations.forEach(function (o) {
+      if (o[C.perimetre] !== perimetre || !present(o)) return;
+      var a = o[C.annee];
+      (avecDonnees[a] = avecDonnees[a] || {})[o[C.entite]] = 1;
+      if (vars[o[C.variable]] && vars[o[C.variable]].famille === familleDiv) ((trouve[o[C.variable]] = trouve[o[C.variable]] || {})[a] = trouve[o[C.variable]][a] || []).push(o[C.entite]);
+    });
+    var annees = Object.keys(avecDonnees).map(Number).filter(function (a) { return Object.keys(avecDonnees[a]).length >= 5; }).sort();
+    var tab = $("divulgation-table"); tab.textContent = "";
+    var tr = el("tr", {}, [el("th", { classe: "fixe", texte: t("variables") })]);
+    annees.forEach(function (a) { tr.appendChild(el("th", { texte: String(a) })); });
+    tab.appendChild(el("thead", {}, [tr]));
+    var corps = el("tbody");
+    D.variables.filter(function (v) { return v.famille === familleDiv; }).forEach(function (v) {
+      var ligne = el("tr", {}, [el("td", { classe: "fixe" }, [el("span", { texte: (langue === "en" ? v.libelle_en : v.libelle_fr) + " " }), el("span", { classe: "code", translate: "no", texte: v.code })])]);
+      annees.forEach(function (a) {
+        var qui = ((trouve[v.code] || {})[a] || []).sort(), total = Object.keys(avecDonnees[a]).length;
+        var td = el("td", { classe: "valeur", tabindex: "0", texte: qui.length + "/" + total, title: Math.round(100 * qui.length / total) + " %" });
+        function montrer() { $("divulgation-liste").textContent = t("dListe").replace("{v}", v.code).replace("{a}", a) + (qui.length ? qui.join(", ") : "—"); }
+        td.addEventListener("click", montrer);
+        td.addEventListener("keydown", function (ev) { if (ev.key === "Enter") montrer(); });
+        ligne.appendChild(td);
+      });
+      corps.appendChild(ligne);
+    });
+    tab.appendChild(corps);
+  }
+
   tout();
   dessinerRegistre();
   dessinerCouverture();
+  dessinerDivulgation();
   dessinerVersions();
   dessinerTypes();
   dessinerGuide();

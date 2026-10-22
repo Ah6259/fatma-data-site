@@ -72,12 +72,22 @@
     <div class="puces" id="modes" role="radiogroup"></div>
     <p class="aide" id="aide-mode"></p>
     <div id="familles"></div>
+    <h3 data-t="rTitre"></h3>
+    <p class="aide" data-t="rAide"></p>
+    <div class="boutons constructeur">
+      <select id="r-num" class="champ court" aria-label="Numerator"></select>
+      <span aria-hidden="true">÷</span>
+      <select id="r-den" class="champ court" aria-label="Denominator"></select>
+      <button type="button" class="bouton" id="r-ajouter" data-t="rAjouter"></button>
+    </div>
+    <p id="r-retour" class="confirmation" role="status" hidden></p>
   </section>
 
   <section class="etape" aria-labelledby="t-apercu">
     <h2 id="t-apercu"><span class="num">5</span><span data-t="etapeApercu"></span></h2>
     <div id="resume" class="tuiles"></div>
     <div id="avertissements"></div>
+    <div id="faisabilite" class="faisabilite"></div>
     <div class="legende">
       <span><i class="pastille ok"></i><span data-t="legendeVerifie"></span></span>
       <span><i class="pastille relire"></i><span data-t="legendeRelire"></span></span>
@@ -126,6 +136,11 @@
     <p class="aide" data-t="aideCouverture"></p>
     <div id="couverture-resume" class="tuiles"></div>
     <div class="tableau-cadre"><table id="couverture-table"></table></div>
+    <h3 data-t="dTitre"></h3>
+    <p class="aide" data-t="dAide"></p>
+    <div class="puces petites" id="divulgation-familles" role="radiogroup"></div>
+    <div class="tableau-cadre"><table id="divulgation-table"></table></div>
+    <p id="divulgation-liste" class="aide"></p>
   </section>
 
   <section class="etape" aria-labelledby="t-contact" id="contact">
@@ -182,6 +197,6 @@
 <script src="assets/son.js?v=1"></script>
 <script src="assets/lib/xlsx.full.min.js?v=0.20.3"></script>
 <script src="donnees/donnees.js?v=2ba22c4ad53f"></script>
-<script src="assets/app.js?v=13"></script>
+<script src="assets/app.js?v=14"></script>
 </body>
 </html>
