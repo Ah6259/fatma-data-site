@@ -103,7 +103,7 @@
   var sources = {}; D.sources.forEach(function (s) { sources[s.id] = s; });
   var toutesAnnees = Array.from(new Set(D.observations.map(function (o) { return o[C.annee]; }))).sort();
   var familles = []; D.variables.forEach(function (v) { if (familles.indexOf(v.famille) < 0) familles.push(v.famille); });
-  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios", "Audit": "Audit", "Sharia governance": "Sharia governance", "Islamic financing by contract": "Islamic financing by contract", "Islamic banking": "Islamic banking", "Governance": "Governance", "ESG": "ESG" } };
+  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios", "Audit": "Audit", "Sharia governance": "Sharia governance", "Islamic financing by contract": "Islamic financing by contract", "Islamic banking": "Islamic banking", "Governance": "Governance", "ESG": "ESG", "Capital and risk": "Capital and risk" } };
   function nomFamille(f) { return (NOMS_FAMILLES[langue] || {})[f] || f; }
 
   // ----- état de la sélection
@@ -471,7 +471,8 @@
     "RATIO.FINANCING_TO_FUNDING", "RATIO.COST_TO_INCOME_IFRS"];
   var TEXTE_CLES = ["AUD.FIRM", "AUD.BIG4", "AUD.OPINION", "AUD.KAM", "AUD.KAM_COUNT", "AUD.KAM_TOPICS", "AUD.FEES", "SHR.SSB_REPORT",
     "SHR.SSB_MEMBERS", "SHR.SSB_CONCLUSION", "SHR.SHARIA_AUDIT", "SHR.FRAMEWORK", "SHR.ZAKAT_BY", "GOV.BOARD_SIZE",
-    "GOV.BOARD_INDEPENDENT", "GOV.BOARD_WOMEN", "ESG.EMPLOYEES", "ESG.SDG_INDEX"];
+    "GOV.BOARD_INDEPENDENT", "GOV.BOARD_WOMEN", "GOV.CEO_DUALITY", "RISK.CAR", "ISL.PER", "ISL.IRR", "ISL.RIA",
+    "ISL.NON_SHARIA_INCOME", "ESG.EMPLOYEES", "ESG.SDG_INDEX"];
   function tableauFiche(tab, e, perim, annees, codes) {
     tab.textContent = "";
     var lignes = codes.filter(function (c) { return vars[c] && annees.some(function (a) { var o = obs[e.code + "|" + perim + "|" + a + "|" + c]; return o && o[C.valeur] !== null; }); });
