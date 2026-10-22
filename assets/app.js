@@ -328,6 +328,7 @@
   function nomRaison(r) { if (!r) return ""; if (r.indexOf("donnee_de_calcul_absente") === 0) return t("rCalcul") + (r.split(":")[1] ? " (" + r.split(":")[1].trim() + ")" : ""); return { ligne_absente_de_l_etat_publie: t("rLigne"), rapport_non_collecte: t("rRapport"), non_applicable: t("rNA"), auditor_report_not_in_document: t("rAudit"), not_stated_in_document: t("rNonDit"), contract_not_in_financing_note: t("rContrat"), financing_note_not_found: t("rNote"),
       key_audit_matters_not_numbered: "key audit matters are not numbered in the report (count not guessed)", no_key_audit_matters_section: "no key audit matters section in the report",
       no_listed_topic_named: "no topic of the fixed list named", line_not_found_in_read_pages: "line not found in the pages read",
+      line_not_found_in_the_reports: "line not found in the reports of the year (read in full)", not_stated_in_one_sentence_of_the_reports: "not stated in one sentence of the reports of the year (read in full)",
       not_stated_in_one_sentence_of_the_pages_read: "not stated in one sentence of the pages read", annual_report_not_collected: "annual report not collected (financial statements only)",
       no_sharia_board_report_in_document: "no Sharia board report in the document", conclusion_not_stated: "conclusion not stated", sharia_audit_not_mentioned: "Sharia audit not mentioned in the pages read" }[r] || r; }
   function montrerDetail(e, annee, c, o) {
