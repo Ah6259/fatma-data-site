@@ -106,7 +106,7 @@
   var sources = {}; D.sources.forEach(function (s) { sources[s.id] = s; });
   var toutesAnnees = Array.from(new Set(D.observations.map(function (o) { return o[C.annee]; }))).sort();
   var familles = []; D.variables.forEach(function (v) { if (familles.indexOf(v.famille) < 0) familles.push(v.famille); });
-  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios", "Audit": "Audit", "Sharia governance": "Sharia governance", "Islamic financing by contract": "Islamic financing by contract", "Islamic banking": "Islamic banking", "Governance": "Governance", "ESG": "ESG", "Capital and risk": "Capital and risk" } };
+  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios", "Audit": "Audit", "Sharia governance": "Sharia governance", "Islamic financing by contract": "Islamic financing by contract", "Islamic banking": "Islamic banking", "Governance": "Governance", "ESG": "ESG", "Capital and risk": "Capital and risk", "Ownership": "Ownership" } };
   function nomFamille(f) { return (NOMS_FAMILLES[langue] || {})[f] || f; }
 
   // ----- état de la sélection
@@ -519,7 +519,7 @@
     "RATIO.FINANCING_TO_FUNDING", "RATIO.COST_TO_INCOME_IFRS"];
   var TEXTE_CLES = ["AUD.FIRM", "AUD.BIG4", "AUD.OPINION", "AUD.KAM", "AUD.KAM_COUNT", "AUD.KAM_TOPICS", "AUD.FEES", "SHR.SSB_REPORT",
     "SHR.SSB_MEMBERS", "SHR.SSB_CONCLUSION", "SHR.SHARIA_AUDIT", "SHR.FRAMEWORK", "SHR.ZAKAT_BY", "GOV.BOARD_SIZE",
-    "GOV.BOARD_INDEPENDENT", "GOV.BOARD_WOMEN", "GOV.CEO_DUALITY", "RISK.CAR", "ISL.PER", "ISL.IRR", "ISL.RIA",
+    "GOV.BOARD_INDEPENDENT", "GOV.BOARD_WOMEN", "GOV.CEO_DUALITY", "OWN.LARGEST", "RISK.CAR", "ISL.PER", "ISL.IRR", "ISL.RIA",
     "ISL.NON_SHARIA_INCOME", "ESG.EMPLOYEES", "ESG.SDG_INDEX"];
   function tableauFiche(tab, e, perim, annees, codes) {
     tab.textContent = "";
@@ -675,7 +675,7 @@
 
   // ----- 10. guide for researchers (one page)
   var GUIDE = [
-    ["What is in the database", "Financial statements of Islamic banks taken from their official documents (balance sheet, income statement, cash flows, off-balance sheet), audit and Sharia governance facts read in the auditor's and Sharia board's reports, governance and ESG facts stated in the annual reports, and the world register of Islamic banks with the progress of the collection."],
+    ["What is in the database", "Financial statements of Islamic banks taken from their official documents (balance sheet, income statement, cash flows, off-balance sheet), audit and Sharia governance facts read in the auditor's and Sharia board's reports, governance and ESG facts stated in the annual reports, and the world register of Islamic banks with the progress of the collection. Pilot companies other than banks (Apple from its SEC XBRL filings, SFBT from its published statements) test the method on other sectors: bank-only variables are marked not applicable for them."],
     ["How to build a dataset", "1. Choose companies (search by name or ticker, filter by country). 2. Choose consolidated or standalone statements. 3. Choose years. 4. Choose variables (Guided mode: key variables; Advanced mode: all, each with a definition). 5. Check the preview: tap a value to see its document, page and original label. 6. Download Excel, CSV or a Stata do-file for your selection, or the full dataset in Excel and Stata."],
     ["What the colours and statuses mean", "Automatically verified: the value passed the accounting checks (totals, balance sheet equality, chain of the income statement, cash flows, consistency with the following year). It is NOT a human verification. To review: a check failed or the figure was hard to read (scans). Awaiting checks: no check could test it yet. Restated: the following year's report gives another figure; the original is kept and the restated value is shown next to it."],
     ["Missing values", "A missing value is always empty, never 0, and always has a reason: line not present in the published statement, document not collected, not applicable, value needed for a ratio missing, not stated in the document."],
