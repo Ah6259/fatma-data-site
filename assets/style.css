@@ -141,3 +141,12 @@ dd { margin: 0; word-break: break-word; }
 #couverture-table td, #couverture-table th { font-size: 13px; }
 #guide-contenu h3 { margin: 14px 0 4px; }
 #guide-contenu p { margin: 0 0 8px; }
+@media (max-width: 719px) {
+  /* reference set on a phone: one card per value instead of a wide table */
+  #ref-table thead { display: none; }
+  #ref-table tr { display: block; border-top: 1px solid var(--bord); padding: 8px 10px; }
+  #ref-table td { display: block; border: 0; padding: 2px 0; white-space: normal; }
+  #ref-table td:first-child { font-weight: 700; color: var(--bleu); }
+  #ref-table input.champ { width: 100%; }
+  .fiche td.fixe { white-space: normal; min-width: 120px; max-width: 170px; }
+}
