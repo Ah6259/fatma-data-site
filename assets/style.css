@@ -153,3 +153,4 @@ dd { margin: 0; word-break: break-word; }
 /* ratio builder: long variable names never widen the page on a phone (390 px) */
 .constructeur select { min-width: 0; max-width: 100%; flex: 1 1 100%; }
 @media (min-width: 700px) { .constructeur select { flex: 1 1 240px; } }
+.groupe-secteur { grid-column: 1 / -1; margin: 10px 0 0; font-size: 15px; color: var(--bleu); }

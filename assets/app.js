@@ -121,6 +121,7 @@
     annees: toutesAnnees.slice(-5),
     variables: ["BS.TOTAL_ASSETS", "BS.LOANS_CUSTOMERS", "BS.FINANCING_CUSTOMERS", "BS.DEPOSITS_CUSTOMERS", "BS.TOTAL_EQUITY", "IS.NET_INCOME", "RATIO.ROA", "RATIO.ROE"],
     pays: [],
+    secteurs: [],
     ouvertes: {}
   };
 
@@ -138,8 +139,13 @@
   D.entites.forEach(function (e) { clesEntites[e.code] = sonRecherche.cle([e.sigle, e.nom.fr, e.nom.en, e.nom.ar, e.code].join(" ")); });
   function dessinerEntites() {
     var q = $("recherche").value, boite = $("liste-entites"); boite.textContent = "";
-    var trouvees = D.entites.filter(function (e) { return sonRecherche.trouve(clesEntites[e.code], q) && (!etat.pays.length || etat.pays.indexOf(e.pays) >= 0); });
+    var trouvees = D.entites.filter(function (e) { return sonRecherche.trouve(clesEntites[e.code], q) && (!etat.pays.length || etat.pays.indexOf(e.pays) >= 0)
+      && (!etat.secteurs.length || etat.secteurs.indexOf(e.type) >= 0); });
+    // grouped by sector: Islamic banks, Islamic windows of conventional banks, conventional banks, other companies
+    trouvees.sort(function (a, b) { return ORDRE_SECTEURS.indexOf(a.type) - ORDRE_SECTEURS.indexOf(b.type) || ((a.nom.en || a.nom.fr || "") < (b.nom.en || b.nom.fr || "") ? -1 : 1); });
+    var groupe = null;
     trouvees.forEach(function (e) {
+      if (e.type !== groupe) { groupe = e.type; boite.appendChild(el("h3", { classe: "groupe-secteur", texte: secteurPluriel(e.type) })); }
       var choisie = etat.entites.indexOf(e.code) >= 0;
       var case_ = el("input", { type: "checkbox", id: "e-" + e.code }); case_.checked = choisie;
       case_.addEventListener("change", function () {
@@ -148,7 +154,7 @@
       });
       var nom = e.nom.en || e.nom.fr;
       boite.appendChild(el("label", { classe: "carte-entite" + (choisie ? " choisie" : ""), "for": "e-" + e.code }, [case_,
-        el("div", {}, [el("div", { classe: "titre", texte: e.sigle + " — " + nom }),
+        el("div", {}, [el("div", { classe: "titre", texte: robots(e) + e.sigle + " — " + nom }),
           el("div", { classe: "infos", texte: [secteur(e.type), e.nom.ar, nomPays(e.pays), e.devise, e.referentiel].filter(Boolean).join(" · ") }),
           el("a", { href: "#bank=" + e.code, classe: "petit-lien", texte: t("pageBanque") })])]));
     });
@@ -165,6 +171,30 @@
     LU: "Luxembourg", FR: "France", TJ: "Tajikistan", UZ: "Uzbekistan", MU: "Mauritius", CM: "Cameroon", ML: "Mali", BF: "Burkina Faso",
     GN: "Guinea", CI: "Côte d'Ivoire", TG: "Togo", BJ: "Benin", SL: "Sierra Leone", LR: "Liberia", KM: "Comoros", RU: "Russia", US: "United States", CA: "Canada", AU: "Australia" };
   function nomPays(c) { return NOMS_PAYS[c] || c; }
+  // sector filter (chips): Islamic / conventional (Ahmed, 23/10/2026)
+  var ORDRE_SECTEURS = ["banque_islamique", "banque_islamique_fenetre", "banque_conventionnelle", "societe"];
+  function secteurPluriel(type) {
+    return { banque_islamique: "Islamic banks", banque_islamique_fenetre: "Islamic windows of conventional banks",
+      banque_conventionnelle: "Conventional banks", societe: "Companies (non-financial)" }[type] || "Other";
+  }
+  function dessinerSecteurs() {
+    var boite = $("secteurs"); boite.textContent = "";
+    var tous = el("button", { type: "button", classe: "puce", "aria-pressed": String(!etat.secteurs.length), texte: "All sectors" });
+    tous.addEventListener("click", function () { etat.secteurs = []; dessinerSecteurs(); dessinerEntites(); });
+    boite.appendChild(tous);
+    ORDRE_SECTEURS.forEach(function (s) {
+      var n = D.entites.filter(function (e) { return e.type === s; }).length;
+      if (!n) return;
+      var b = el("button", { type: "button", classe: "puce", "aria-pressed": String(etat.secteurs.indexOf(s) >= 0), texte: secteurPluriel(s) + " (" + n + ")" });
+      b.addEventListener("click", function () {
+        etat.secteurs = etat.secteurs.indexOf(s) >= 0 ? etat.secteurs.filter(function (x) { return x !== s; }) : etat.secteurs.concat([s]);
+        dessinerSecteurs(); dessinerEntites();
+      });
+      boite.appendChild(b);
+    });
+  }
+  // banks whose sites refuse robots: said in front of their name (Ahmed, 23/10/2026)
+  function robots(e) { return e && e.robots_refuses ? "⛔ Robots refused — " : ""; }
   function dessinerPays() {
     var boite = $("pays"); boite.textContent = "";
     var liste = Array.from(new Set(D.entites.map(function (e) { return e.pays; }))).sort(function (a, b) { return nomPays(a) < nomPays(b) ? -1 : 1; });
@@ -640,7 +670,7 @@
   $("recherche").addEventListener("input", dessinerEntites);
   $("annees-toutes").addEventListener("click", function () { etat.annees = toutesAnnees.slice(); dessinerAnnees(); dessinerApercu(); });
   $("annees-5").addEventListener("click", function () { etat.annees = toutesAnnees.slice(-5); dessinerAnnees(); dessinerApercu(); });
-  function tout() { traduire(); dessinerConstructeur(); dessinerPays(); dessinerEntites(); dessinerPerimetres(); dessinerAnnees(); dessinerModes(); dessinerVariables(); dessinerApercu(); dessinerJeux(); dessinerSelections(); }
+  function tout() { traduire(); dessinerConstructeur(); dessinerSecteurs(); dessinerPays(); dessinerEntites(); dessinerPerimetres(); dessinerAnnees(); dessinerModes(); dessinerVariables(); dessinerApercu(); dessinerJeux(); dessinerSelections(); }
   // ----- 7. world register of Islamic banks (coverage of the collection)
   function dessinerRegistre() {
     var R = D.registre || [];
@@ -670,7 +700,7 @@
         var forme = b.forme === "islamic_window" ? t("rFenetre") : b.forme === "islamic_subsidiary" ? t("rFiliale") : "";
         var infos = [b.regulateur, b.cotee === true ? t("rCotee") + (b.bourse ? " (" + b.bourse + (b.ticker ? " " + b.ticker : "") + ")" : "") : b.cotee === false ? t("rNonCotee") : "", forme, b.devise].filter(Boolean).join(" · ");
         var li = el("li", { classe: "banque-registre " + (b.annees.length ? "ok" : b.documents ? "docs" : "attente") }, [
-          el("div", { classe: "titre", texte: (b.nom || b.sigle) + (b.nom_ar ? " — " + b.nom_ar : "") }),
+          el("div", { classe: "titre", texte: robots(b) + (b.nom || b.sigle) + (b.nom_ar ? " — " + b.nom_ar : "") }),
           el("div", { classe: "infos", texte: infos }),
           el("div", { classe: "statut", texte: statut })]);
         if (b.liste) li.appendChild(el("a", { href: b.liste, target: "_blank", rel: "noopener noreferrer", classe: "petit-lien", texte: t("rListe") }));
@@ -717,7 +747,7 @@
     var perims = ["consolide", "individuel"].filter(function (p) { return D.observations.some(function (o) { return o[C.entite] === code && o[C.perimetre] === p && o[C.valeur] !== null && o[C.origine] !== "calcul"; }); });
     var perim = perims[0] || "consolide";
     var annees = Array.from(new Set(D.observations.filter(function (o) { return o[C.entite] === code && o[C.perimetre] === perim && o[C.valeur] !== null; }).map(function (o) { return o[C.annee]; }))).sort();
-    $("fiche-titre").textContent = (e.nom.en || e.nom.fr || e.sigle) + (e.nom.ar ? " — " + e.nom.ar : "");
+    $("fiche-titre").textContent = robots(e) + (e.nom.en || e.nom.fr || e.sigle) + (e.nom.ar ? " — " + e.nom.ar : "");
     var infos = $("fiche-infos"); infos.textContent = "";
     [[t("fSecteur"), secteur(e.type)], [t("cPays"), nomPays(e.pays)], [t("fRegulateur"), e.regulateur], [t("fCotation"), e.cotee ? (e.bourse || "") + (e.ticker ? " " + e.ticker : "") : e.cotee === false ? t("rNonCotee") : ""],
      [t("fDevise"), e.devise], [t("fExercice"), e.fin_exercice], [t("fPerimetre"), t(perim)]].forEach(function (x) {
@@ -770,7 +800,7 @@
     tab.appendChild(el("thead", {}, [tr]));
     var corps = el("tbody");
     L.slice().sort(function (a, b) { return b.verifiees - a.verifiees || (a.nom < b.nom ? -1 : 1); }).forEach(function (x) {
-      var nom = entitesParCode[x.code] ? el("a", { href: "#bank=" + x.code, texte: x.nom }) : el("span", { texte: x.nom });
+      var nom = entitesParCode[x.code] ? el("a", { href: "#bank=" + x.code, texte: robots(entitesParCode[x.code]) + x.nom }) : el("span", { texte: x.nom });
       corps.appendChild(el("tr", {}, [el("td", {}, [nom]), el("td", { texte: secteur((entitesParCode[x.code] || {}).type || x.type || "banque_islamique") }),
         el("td", { texte: nomPays(x.pays) }),
         el("td", { texte: x.annees_documents.join(", ") }), el("td", { texte: x.annees_valeurs.join(", ") || "—" }),
