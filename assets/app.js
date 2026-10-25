@@ -59,6 +59,7 @@
       fChiffres: "Key figures by year", fTexte: "Audit, Sharia, governance and ESG (read in the text)", fCouverture: "Coverage",
       fDocuments: "Official documents used", signalerBanque: "Report an error on this bank",
       fSecteur: "Sector", fRegulateur: "Regulator", fCotation: "Listing", fDevise: "Reporting currency", fExercice: "Fiscal year end", fPerimetre: "Statements shown",
+      fMere: "Parent conventional bank", fFenetre: "Islamic window of this bank", lienSansDonnees: "no figures yet", rPageMere: "parent bank page (whole bank)",
       versionsTitre: "Dataset versions", aideVersions: "Each version is listed with its date and size. A version can be rebuilt exactly from the private archive (same fingerprint, same files).",
       etapeCouverture: "Coverage report", aideCouverture: "For every bank with collected documents: years collected, years with figures, values read, automatically verified, to review, and the main reasons of missing values.",
       cBanque: "Company", cSecteur: "Sector", cPays: "Country", cDocs: "Years collected", cAnnees: "Years with figures", cValeurs: "Values", cVerifiees: "Verified", cRelire: "To review", cRaisons: "Main reasons of missing values",
@@ -707,6 +708,8 @@
           el("div", { classe: "statut", texte: statut })]);
         if (b.liste) li.appendChild(el("a", { href: b.liste, target: "_blank", rel: "noopener noreferrer", classe: "petit-lien", texte: t("rListe") }));
         if (entitesParCode[b.code]) { li.appendChild(el("span", { texte: " · " })); li.appendChild(el("a", { href: "#bank=" + b.code, classe: "petit-lien", texte: t("pageBanque") })); }
+        // Islamic window: its conventional parent bank is a company of its own (sector « Conventional banks », D-018)
+        if (b.banque_mere && entitesParCode[b.banque_mere]) { li.appendChild(el("span", { texte: " · " })); li.appendChild(el("a", { href: "#bank=" + b.banque_mere, classe: "petit-lien", texte: t("rPageMere") })); }
         ul.appendChild(li);
       });
       det.appendChild(ul);
@@ -755,6 +758,12 @@
      [t("fDevise"), e.devise], [t("fExercice"), e.fin_exercice], [t("fPerimetre"), t(perim)]].forEach(function (x) {
       if (x[1]) infos.appendChild(el("div", {}, [el("strong", { texte: x[0] + ": " }), el("span", { texte: x[1] })]));
     });
+    // an Islamic window and its conventional parent bank: two companies, each page links to the other (never mixed)
+    if (e.lien) {
+      var cible = entitesParCode[e.lien.code];
+      infos.appendChild(el("div", { classe: "lien-entite" }, [el("strong", { texte: t(e.lien.role === "banque_mere" ? "fMere" : "fFenetre") + ": " }),
+        cible ? el("a", { href: "#bank=" + e.lien.code, texte: e.lien.nom }) : el("span", { texte: e.lien.nom + " (" + t("lienSansDonnees") + ")" })]));
+    }
     var av = $("fiche-avertissements"); av.textContent = "";
     avertissements([code], annees, perim).forEach(function (x) { av.appendChild(el("p", { classe: "alerte", texte: x })); });
     tableauFiche($("fiche-chiffres"), e, perim, annees, CHIFFRES_CLES);
@@ -764,14 +773,16 @@
     if (c) fc.appendChild(el("p", { texte: t("cDocs") + ": " + (c.annees_documents.join(", ") || "—") + " · " + t("cAnnees") + ": " + (c.annees_valeurs.join(", ") || "—") +
       " · " + c.valeurs + " " + t("cValeurs").toLowerCase() + ", " + c.verifiees + " " + t("verifiees") + ", " + c.a_relire + " " + t("aRelire") }));
     var ul = $("fiche-documents"); ul.textContent = "";
-    D.sources.filter(function (s) { return s.entite === code; }).sort(function (a, b) { return a.periode < b.periode ? 1 : -1; }).forEach(function (s) {
+    // a conventional parent bank's documents are registered (once) under its Islamic window
+    var docsDe = e.lien && e.lien.role === "fenetre_islamique" ? e.lien.code : null;
+    D.sources.filter(function (s) { return s.entite === code || (docsDe && s.entite === docsDe); }).sort(function (a, b) { return a.periode < b.periode ? 1 : -1; }).forEach(function (s) {
       ul.appendChild(el("li", {}, [el("a", { href: s.url, target: "_blank", rel: "noopener noreferrer", texte: s.titre })]));
     });
     $("fiche-signaler").onclick = function () { $("f-entite").value = (e.sigle || "") + " — " + (e.nom.en || e.nom.fr || ""); choisirType("erreur"); location.hash = "#contact"; };
     return true;
   }
   function route() {
-    var m = /^#bank=([A-Z]{2}\.[A-Z0-9]+)$/.exec(location.hash);
+    var m = /^#bank=([A-Z]{2}\.[A-Z0-9]+(?:\.CONV)?)$/.exec(location.hash);     // « .CONV »: parent bank of a window
     var ok = m && dessinerFiche(m[1]);
     var ref = location.hash === "#reference" && (D.echantillon_reference || []).length > 0;
     if (ref) dessinerReference();
