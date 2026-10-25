@@ -10,7 +10,7 @@
       sousTitre: "Research database — pilot version",
       intro: "Choose companies, years and variables, check the preview, then download your dataset. Every figure comes from an official company document and shows its page.",
       etapeEntites: "Companies", rechercheEntite: "Search a company (name or ticker)…", aucuneEntite: "No company matches.",
-      etapePerimetre: "Statements", consolide: "Consolidated (group)", individuel: "Standalone (company)",
+      etapePerimetre: "Statements", consolide: "Consolidated (group)", individuel: "Standalone (company)", fenetre_islamique: "Islamic window (section of the parent bank's statements)",
       etapeAnnees: "Years", toutes: "All", cinqDernieres: "Last 5",
       etapeVariables: "Variables", toutChoisir: "Select all", rienChoisir: "Select none", choisies: "selected",
       etapeApercu: "Preview", entites: "company(ies)", annees: "year(s)", variables: "variable(s)", observations: "values",
@@ -216,7 +216,9 @@
   // ----- 2. comptes
   function dessinerPerimetres() {
     var boite = $("perimetres"); boite.textContent = "";
-    ["consolide", "individuel"].forEach(function (p) {
+    // the Islamic window scope (outils/extraire_fenetre.py) is offered only when the database holds such values
+    var fenetre = D.observations.some(function (o) { return o[C.perimetre] === "fenetre_islamique"; });
+    ["consolide", "individuel"].concat(fenetre ? ["fenetre_islamique"] : []).forEach(function (p) {
       var b = el("button", { type: "button", classe: "puce", role: "radio", "aria-checked": String(etat.perimetre === p), texte: t(p) });
       b.addEventListener("click", function () { etat.perimetre = p; dessinerPerimetres(); dessinerApercu(); dessinerDivulgation(); });
       boite.appendChild(b);
@@ -744,7 +746,7 @@
   function dessinerFiche(code) {
     var e = entitesParCode[code];
     if (!e) return false;
-    var perims = ["consolide", "individuel"].filter(function (p) { return D.observations.some(function (o) { return o[C.entite] === code && o[C.perimetre] === p && o[C.valeur] !== null && o[C.origine] !== "calcul"; }); });
+    var perims = ["consolide", "individuel", "fenetre_islamique"].filter(function (p) { return D.observations.some(function (o) { return o[C.entite] === code && o[C.perimetre] === p && o[C.valeur] !== null && o[C.origine] !== "calcul"; }); });
     var perim = perims[0] || "consolide";
     var annees = Array.from(new Set(D.observations.filter(function (o) { return o[C.entite] === code && o[C.perimetre] === perim && o[C.valeur] !== null; }).map(function (o) { return o[C.annee]; }))).sort();
     $("fiche-titre").textContent = robots(e) + (e.nom.en || e.nom.fr || e.sigle) + (e.nom.ar ? " — " + e.nom.ar : "");
