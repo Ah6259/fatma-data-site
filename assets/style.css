@@ -154,3 +154,14 @@ dd { margin: 0; word-break: break-word; }
 .constructeur select { min-width: 0; max-width: 100%; flex: 1 1 100%; }
 @media (min-width: 700px) { .constructeur select { flex: 1 1 240px; } }
 .groupe-secteur { grid-column: 1 / -1; margin: 10px 0 0; font-size: 15px; color: var(--bleu); }
+/* guide lists, coverage by category, data quality (26/10/2026); on a phone long names wrap, tables scroll in their frame */
+.guide-liste { margin: 0 0 10px; padding-inline-start: 20px; }
+.guide-liste li { margin: 4px 0; overflow-wrap: anywhere; }
+td.nombre { text-align: end; font-variant-numeric: tabular-nums; }
+#categories-table td.fixe, #categories-annees td.fixe, #qualite-causes td.fixe { white-space: normal; min-width: 0; max-width: 260px; }
+.etiquette-ia { border-inline-start: 4px solid var(--relire); background: var(--relire-fond); padding: 8px 12px; border-radius: 8px; margin: 8px 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+#quality .alerte { overflow-wrap: anywhere; }
+@media (max-width: 719px) {
+  #categories-table td.fixe, #categories-annees td.fixe, #qualite-causes td.fixe { max-width: 150px; }
+  #categories-table th, #categories-annees th, #qualite-causes th { white-space: normal; }
+}

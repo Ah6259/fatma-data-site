@@ -61,9 +61,9 @@
       fSecteur: "Sector", fRegulateur: "Regulator", fCotation: "Listing", fDevise: "Reporting currency", fExercice: "Fiscal year end", fPerimetre: "Statements shown",
       fMere: "Parent conventional bank", fFenetre: "Islamic window of this bank", lienSansDonnees: "no figures yet", rPageMere: "parent bank page (whole bank)",
       versionsTitre: "Dataset versions", aideVersions: "Each version is listed with its date and size. A version can be rebuilt exactly from the private archive (same fingerprint, same files).",
-      etapeCouverture: "Coverage report", aideCouverture: "For every bank with collected documents: years collected, years with figures, values read, automatically verified, to review, and the main reasons of missing values.",
+      etapeCouverture: "Coverage report", aideCouverture: "For every company with collected documents (banks, takaful operators, finance companies, funds…): years collected, years with figures, values read, automatically verified, to review, and the main reasons of missing values.",
       cBanque: "Company", cSecteur: "Sector", cPays: "Country", cDocs: "Years collected", cAnnees: "Years with figures", cValeurs: "Values", cVerifiees: "Verified", cRelire: "To review", cRaisons: "Main reasons of missing values",
-      cBanques: "banks with documents", cAvecDonnees: "with figures", cTotalValeurs: "values read", cTotalVerifiees: "automatically verified",
+      cBanques: "companies with documents", cAvecDonnees: "with figures", cTotalValeurs: "values read", cTotalVerifiees: "automatically verified",
       etapeContact: "Report an error or request a variable",
       aideContact: "Seen a wrong value, or need a variable that is not in the database? Tell us: every message is read and answered by e-mail.",
       tErreur: "Report an error", tVariable: "Request a variable",
@@ -75,13 +75,35 @@
       avFenetre: "Fiscal years end on different dates in this selection ({x}): the same « year » covers different periods.",
       avIAH: "Islamic banks present investment accounts differently (equity of investment account holders under AAOIFI, liabilities or customer deposits under IFRS): deposit-based ratios are not directly comparable; see Financing to deposits and investment accounts.",
       avTypes: "This selection mixes Islamic and conventional banks.",
+      avSecteurs: "This selection mixes sectors (banks, takaful operators, finance companies, funds, other companies): their statements are not comparable line by line, and sector-specific variables are « not applicable » to the others.",
       avOpinion: "The auditor's opinion is not unqualified for: {x}.",
       avCadre: "Accounting frameworks stated in the documents: {x}.",
       refTitre: "Reference set — values entered by hand",
       refAide: "For each line, open the official document at the page given, find the line named in « label in the document » and type the number EXACTLY as printed (minus sign or brackets for negatives) with the unit printed on the page (units, thousands or millions). Our value is not shown, so that the comparison is blind. Your entries are kept on this device until you export them.",
       refExport: "Download my entries (CSV)", refEnvoi: "Send the downloaded file to Ahmed (or put it in registres/reference/ of the private repository): outils/mesurer_precision.py then measures the accuracy by language and by family.",
       refFait: "entered", refReste: "to do", refIntrouvable: "not found on the page", refUnite: "unit printed",
-      uUnites: "units", uMilliers: "thousands", uMillions: "millions", mReference: "Reference set"
+      uUnites: "units", uMilliers: "thousands", uMillions: "millions", mReference: "Reference set",
+      // coverage by category (page « Coverage »)
+      catTitre: "By category of institution",
+      catAide: "Registered: companies in our registry (from official regulator lists; excluded countries not counted). With documents: at least one official document collected. With verified figures: at least one value that passed the automatic accounting checks. Robots refused: the company's site refuses our robot; its official links are listed and the documents are downloaded by hand, never by bypassing the refusal.",
+      catAnneesTitre: "By year (2021-2025)",
+      catAnneesAide: "For each category and year: companies with automatically verified figures for that year / companies with a document dated that year. A year can have verified figures without its own report: they come from the comparative column of the following year's report.",
+      catCategorie: "Category", catInscrites: "Registered", catDocuments: "With documents", catValeurs: "With figures", catVerifiees: "With verified figures", catRobots: "Robots refused",
+      cParEntreprise: "By company",
+      // data quality (page « Data quality »)
+      mQualite: "Data quality", etapeQualite: "Data quality",
+      qAide: "How often our values match the value printed in the official document. Measured when the site is built, on the values published now: the figures below change when the data change.",
+      qHumainTitre: "Human reference (researcher)",
+      qHumainAide: "Values typed by hand by the researcher from the official documents, without seeing ours (page « Reference set »).",
+      qHumainAttente: "Human reference: pending. The researcher has not yet typed the reference values (page « Reference set »); until then no value of this database is human-verified.",
+      qRelectureTitre: "Independent second reading ({d})",
+      qEtiquette: "Second reader (AI, blind, from page images) — not a human verification; the human reference by the researcher is pending.",
+      qEtiquetteApres: "Second reader (AI, blind, from page images) — not a human verification; the human reference by the researcher is shown above.",
+      qRelectureAide: "Another reader, an AI that never saw our values, read each value of the fixed sample on the image of the official page and wrote the number, its sign and the scale printed on the page. Where its notes show that the printed line is not the variable (a subtotal, one component of a total, a half-year report), the expected answer was corrected and the reason kept. A match = same value up to the rounding of the printed scale, with the same sign.",
+      qCompares: "values compared", qJustes: "match exactly", qTaux: "match rate", qSigne: "differ by sign only", qExclues: "not compared (excluded country or unread)",
+      qVerifFausses: "automatically verified but wrong",
+      qCause: "Situation of the value", qN: "Values", qOk: "Match", qPct: "Rate", qSigneSeul: "Sign only",
+      refVoirQualite: "Results of the measure: page « Data quality »."
     }
   };
   var CLE_SEL = "fatma-research-selections";
@@ -107,7 +129,7 @@
   var sources = {}; D.sources.forEach(function (s) { sources[s.id] = s; });
   var toutesAnnees = Array.from(new Set(D.observations.map(function (o) { return o[C.annee]; }))).sort();
   var familles = []; D.variables.forEach(function (v) { if (familles.indexOf(v.famille) < 0) familles.push(v.famille); });
-  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios", "Audit": "Audit", "Sharia governance": "Sharia governance", "Islamic financing by contract": "Islamic financing by contract", "Islamic banking": "Islamic banking", "Governance": "Governance", "ESG": "ESG", "Capital and risk": "Capital and risk", "Ownership": "Ownership" } };
+  var NOMS_FAMILLES = { en: { "Bilan": "Balance sheet", "Hors bilan": "Off-balance sheet", "Résultat": "Income statement", "Flux": "Cash flows", "Ratios": "Ratios", "Audit": "Audit", "Sharia governance": "Sharia governance", "Islamic financing by contract": "Islamic financing by contract", "Islamic banking": "Islamic banking", "Governance": "Governance", "ESG": "ESG", "Capital and risk": "Capital and risk", "Ownership": "Ownership", "Takaful": "Takaful (Islamic insurance)", "Islamic funds": "Islamic funds & REITs" } };
   function nomFamille(f) { return (NOMS_FAMILLES[langue] || {})[f] || f; }
 
   // ----- état de la sélection
@@ -173,10 +195,24 @@
     GN: "Guinea", CI: "Côte d'Ivoire", TG: "Togo", BJ: "Benin", SL: "Sierra Leone", LR: "Liberia", KM: "Comoros", RU: "Russia", US: "United States", CA: "Canada", AU: "Australia" };
   function nomPays(c) { return NOMS_PAYS[c] || c; }
   // sector filter (chips): Islamic / conventional (Ahmed, 23/10/2026)
-  var ORDRE_SECTEURS = ["banque_islamique", "banque_islamique_fenetre", "banque_conventionnelle", "societe"];
+  // takaful operators and Islamic finance companies: decision D-017 (25/10/2026)
+  // Islamic funds and REITs: decision D-017 (26/10/2026)
+  var ORDRE_SECTEURS = ["banque_islamique", "banque_islamique_fenetre", "takaful", "financement_islamique", "fonds_islamique", "banque_conventionnelle", "societe"];
   function secteurPluriel(type) {
     return { banque_islamique: "Islamic banks", banque_islamique_fenetre: "Islamic windows of conventional banks",
+      takaful: "Takaful operators", financement_islamique: "Islamic finance companies", fonds_islamique: "Islamic funds & REITs",
       banque_conventionnelle: "Conventional banks", societe: "Companies (non-financial)" }[type] || "Other";
+  }
+  // institution type written in the downloads (one column, English codes)
+  // unit of a variable in the codebook of the downloads
+  function uniteCodebook(u) {
+    return { ratio: "ratio", texte: "text", binaire: "0/1", nombre: "count",
+      devise_par_part: "per unit, as printed (see label_as_reported)" }[u] || "reporting currency";
+  }
+  function typeInstitution(type) {
+    return { banque_islamique: "islamic_bank", banque_islamique_fenetre: "islamic_window", banque_conventionnelle: "conventional_bank",
+      societe: "non_financial_company", takaful: "takaful_operator", financement_islamique: "islamic_finance_company",
+      fonds_islamique: "islamic_fund" }[type] || (type || "");
   }
   function dessinerSecteurs() {
     var boite = $("secteurs"); boite.textContent = "";
@@ -343,6 +379,7 @@
   function format(v, variable) {
     if (v === null || v === undefined) return "—";
     if (vars[variable].unite === "texte" || vars[variable].unite === "nombre") return String(v);
+    if (vars[variable].unite === "devise_par_part") return String(v);      // a fund's NAV per unit: as printed, never in thousands
     if (vars[variable].unite === "binaire") return Number(v) === 1 ? "Yes" : "No";
     if (vars[variable].unite === "ratio") return (v * 100).toFixed(2).replace(".", langue === "fr" ? "," : ".") + ESP + "%";
     var k = Math.round(v / 1000), s = Math.abs(k).toString().replace(/\B(?=(\d{3})+(?!\d))/g, langue === "fr" ? ESP : ",");
@@ -450,7 +487,10 @@
     var fins = Array.from(new Set(choisies.map(function (e) { return e.fin_exercice || "12-31"; }))).sort();
     if (fins.length > 1) sortie.push(t("avFenetre").replace("{x}", fins.join(", ")));
     var islamiques = choisies.filter(function (e) { return (e.type || "").indexOf("banque_islamique") === 0; }).length;
-    if (islamiques && islamiques < choisies.length) sortie.push(t("avTypes"));
+    // banks, takaful operators, finance companies, other companies: statements not comparable line by line (D-017)
+    var familleSecteur = function (e) { var x = e.type || ""; return x.indexOf("banque") === 0 ? "banque" : x; };
+    if (new Set(choisies.map(familleSecteur)).size > 1) sortie.push(t("avSecteurs"));
+    else if (islamiques && islamiques < choisies.length) sortie.push(t("avTypes"));
     if (islamiques > 1) sortie.push(t("avIAH"));
     var reserves = [];
     choisies.forEach(function (e) { annees.forEach(function (a) {
@@ -481,7 +521,8 @@
       else dd.textContent = valeur;
       dl.appendChild(el("dt", { texte: t(k) })); dl.appendChild(dd);
     }
-    ajouter("dValeur", o && o[C.valeur] !== null ? format(o[C.valeur], c) + (v.unite === "devise" ? " (" + e.devise + " thousands)" : "") : "—");
+    ajouter("dValeur", o && o[C.valeur] !== null ? format(o[C.valeur], c) + (v.unite === "devise" ? " (" + e.devise + " thousands)" :
+      v.unite === "devise_par_part" ? " (per unit, unit as printed: see the label)" : "") : "—");
     ajouter("dStatut", nomStatut(o ? o[C.statut] : "manquant"));
     if (o && o[C.raison_manquant]) ajouter("dRaison", nomRaison(o[C.raison_manquant]));
     if (o && o[C.libelle_origine]) ajouter("dLibelle", o[C.libelle_origine]);
@@ -503,10 +544,11 @@
 
   // ----- 6. téléchargements (fabriqués dans le navigateur : rien n'est envoyé ailleurs)
   function tableLongue() {
-    var lignes = [["entity", "scope", "year", "variable", "value", "unit", "status", "missing_reason", "origin", "source_id", "page", "label_as_reported", "restated_value", "source_url"]];
+    var lignes = [["entity", "institution_type", "scope", "year", "variable", "value", "unit", "status", "missing_reason", "origin", "source_id", "page", "label_as_reported", "restated_value", "source_url"]];
     lignesSelection().forEach(function (l) { variablesChoisies().forEach(function (c) {
       var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c], s = o && sources[o[C.id_source]];
-      lignes.push([l[0], etat.perimetre, l[1], c, o ? o[C.valeur] : null, vars[c].unite === "devise" ? (entitesParCode[l[0]] || {}).devise : vars[c].unite,
+      lignes.push([l[0], typeInstitution((entitesParCode[l[0]] || {}).type), etat.perimetre, l[1], c, o ? o[C.valeur] : null,
+        vars[c].unite === "devise" ? (entitesParCode[l[0]] || {}).devise : vars[c].unite === "devise_par_part" ? "per_unit_as_printed" : vars[c].unite,
         o ? o[C.statut] : "manquant", o ? o[C.raison_manquant] : "rapport_non_collecte", o ? o[C.origine] : "", o ? o[C.id_source] : "",
         o ? o[C.page] : "", o ? o[C.libelle_origine] : "", o ? o[C.valeur_retraitee] : null, s ? s.url : ""]);
     }); });
@@ -515,12 +557,12 @@
   function nomFichier(ext) { return "fatma_selection_" + etat.perimetre + "_" + D.version + "." + ext; }
   $("dl-excel").addEventListener("click", function () {
     var cols = variablesChoisies(), wb = XLSX.utils.book_new();
-    var large = [["entity", "year", "currency"].concat(cols)];
-    lignesSelection().forEach(function (l) { large.push([l[0], l[1], (entitesParCode[l[0]] || {}).devise].concat(cols.map(function (c) { var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c]; return o ? o[C.valeur] : null; }))); });
+    var large = [["entity", "institution_type", "year", "currency"].concat(cols)];
+    lignesSelection().forEach(function (l) { large.push([l[0], typeInstitution((entitesParCode[l[0]] || {}).type), l[1], (entitesParCode[l[0]] || {}).devise].concat(cols.map(function (c) { var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c]; return o ? o[C.valeur] : null; }))); });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(large), "panel_wide");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tableLongue()), "long_with_quality");
     var dico = [["code", "label_en", "label_fr", "unit", "type", "formula", "definition_en", "definition_fr", "version"]];
-    cols.forEach(function (c) { var v = vars[c]; dico.push([c, v.libelle_en, v.libelle_fr, v.unite === "ratio" ? "ratio" : "reporting currency", v.type, v.formule, v.definition_en, v.definition_fr, v.version]); });
+    cols.forEach(function (c) { var v = vars[c]; dico.push([c, v.libelle_en, v.libelle_fr, uniteCodebook(v.unite), v.type, v.formule, v.definition_en, v.definition_fr, v.version]); });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dico), "codebook");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["dataset_version", D.version], ["scope", etat.perimetre], ["entities", etat.entites.join(" ")], ["years", etat.annees.join(" ")],
       ["downloaded", new Date().toISOString().slice(0, 10)], ["units", "each company's reporting currency (column currency / unit), not thousands; ratios as decimals"], ["missing", "empty cell = missing (never 0); see long_with_quality.missing_reason"],
@@ -537,17 +579,18 @@
     L.push("* Status of each value: see the CSV long format (verifie_auto = passed automatic checks, not human-verified).");
     L.push("clear");
     var types = cols.map(function (c) { return vars[c].unite === "texte" ? "str244 " + nomS(c) : "double " + nomS(c); });
-    L.push("input str32 entity int year str8 currency " + types.join(" "));
+    L.push("input str32 entity int year str8 currency str24 institution_type " + types.join(" "));
     lignesSelection().forEach(function (l) {
       var vals = cols.map(function (c) {
         var o = obs[l[0] + "|" + etat.perimetre + "|" + l[1] + "|" + c], v = o ? o[C.valeur] : null;
         if (vars[c].unite === "texte") return texte(v === null ? "" : v);
         return v === null || v === undefined ? "." : String(v);
       });
-      L.push([texte(l[0]), l[1], texte((entitesParCode[l[0]] || {}).devise || "")].concat(vals).join(" "));
+      L.push([texte(l[0]), l[1], texte((entitesParCode[l[0]] || {}).devise || ""), texte(typeInstitution((entitesParCode[l[0]] || {}).type))].concat(vals).join(" "));
     });
     L.push("end");
     L.push('label variable entity "Entity code"'); L.push('label variable year "Fiscal year"'); L.push('label variable currency "Reporting currency"');
+    L.push('label variable institution_type "Institution type (islamic_bank, takaful_operator, islamic_finance_company...)"');
     cols.forEach(function (c) { L.push("label variable " + nomS(c) + " " + texte(vars[c].libelle_en.slice(0, 80))); });
     L.push("notes: FATMA Research Data " + D.version + " — " + new Date().toISOString().slice(0, 10));
     L.push("compress");
@@ -721,7 +764,9 @@
   // ----- bank page (#bank=CODE): key figures by year, text variables, coverage, documents
   var CHIFFRES_CLES = ["BS.TOTAL_ASSETS", "BS.FINANCING_CUSTOMERS", "BS.LOANS_CUSTOMERS", "BS.DEPOSITS_CUSTOMERS", "BS.EQUITY_IAH",
     "BS.TOTAL_EQUITY", "IS.FINANCING_INCOME", "IS.NET_INCOME", "CF.OPERATING", "RATIO.ROA", "RATIO.ROE", "RATIO.EQUITY_TO_ASSETS",
-    "RATIO.FINANCING_TO_FUNDING", "RATIO.COST_TO_INCOME_IFRS"];
+    "RATIO.FINANCING_TO_FUNDING", "RATIO.COST_TO_INCOME_IFRS",
+    // Islamic funds and REITs (shown only when the company has them)
+    "FND.NET_ASSETS", "FND.NAV_PER_UNIT", "FND.UNITS_IN_ISSUE", "FND.DISTRIBUTION_PER_UNIT", "FND.TOTAL_INVESTMENT_INCOME", "FND.MANAGEMENT_FEE"];
   var TEXTE_CLES = ["AUD.FIRM", "AUD.BIG4", "AUD.OPINION", "AUD.KAM", "AUD.KAM_COUNT", "AUD.KAM_TOPICS", "AUD.FEES", "SHR.SSB_REPORT",
     "SHR.SSB_MEMBERS", "SHR.SSB_CONCLUSION", "SHR.SHARIA_AUDIT", "SHR.FRAMEWORK", "SHR.ZAKAT_BY", "GOV.BOARD_SIZE",
     "GOV.BOARD_INDEPENDENT", "GOV.BOARD_WOMEN", "GOV.CEO_DUALITY", "OWN.LARGEST", "OWN.STATE", "OWN.FOREIGN", "RISK.CAR", "ISL.PER", "ISL.IRR", "ISL.RIA",
@@ -798,6 +843,7 @@
   // sector of a company (Islamic bank, Islamic window, conventional bank, other company)
   function secteur(type) {
     return { banque_islamique: "Islamic bank", banque_islamique_fenetre: "Islamic window of a bank", banque_conventionnelle: "Conventional bank",
+      takaful: "Takaful operator", financement_islamique: "Islamic finance company", fonds_islamique: "Islamic fund / REIT",
       societe: "Company (non-financial)" }[type] || "";
   }
 
@@ -807,7 +853,10 @@
     r.textContent = ""; tab.textContent = "";
     [[L.length, t("cBanques")], [L.filter(function (x) { return x.valeurs > 0; }).length, t("cAvecDonnees")],
      [L.reduce(function (s, x) { return s + x.valeurs; }, 0), t("cTotalValeurs")], [L.reduce(function (s, x) { return s + x.verifiees; }, 0), t("cTotalVerifiees")]
-    ].forEach(function (x) { r.appendChild(el("div", { classe: "tuile" }, [el("div", { classe: "chiffre", texte: String(x[0]) }), el("div", { classe: "quoi", texte: x[1] })])); });
+    ].concat(ORDRE_SECTEURS.map(function (s) {        // companies with documents, sector by sector (D-017)
+      return [L.filter(function (x) { return (x.type || "banque_islamique") === s; }).length, secteurPluriel(s).toLowerCase()];
+    }).filter(function (x) { return x[0] > 0; })
+    ).forEach(function (x) { r.appendChild(el("div", { classe: "tuile" }, [el("div", { classe: "chiffre", texte: String(x[0]) }), el("div", { classe: "quoi", texte: x[1] })])); });
     var tr = el("tr", {});
     ["cBanque", "cSecteur", "cPays", "cDocs", "cAnnees", "cValeurs", "cVerifiees", "cRelire", "cRaisons"].forEach(function (k) { tr.appendChild(el("th", { texte: t(k) })); });
     tab.appendChild(el("thead", {}, [tr]));
@@ -895,20 +944,138 @@
 
   // ----- 10. guide for researchers (one page)
   var GUIDE = [
-    ["What is in the database", "Financial statements of Islamic banks taken from their official documents (balance sheet, income statement, cash flows, off-balance sheet), audit and Sharia governance facts read in the auditor's and Sharia board's reports, governance and ESG facts stated in the annual reports, and the world register of Islamic banks with the progress of the collection. Pilot companies other than banks (Apple from its SEC XBRL filings, SFBT from its published statements) test the method on other sectors: bank-only variables are marked not applicable for them."],
-    ["How to build a dataset", "1. Choose companies (search by name or ticker, filter by country). 2. Choose consolidated or standalone statements. 3. Choose years. 4. Choose variables (Guided mode: key variables; Advanced mode: all, each with a definition). 5. Check the preview: tap a value to see its document, page and original label. 6. Download Excel, CSV or a Stata do-file for your selection, or the full dataset in Excel and Stata."],
-    ["What the colours and statuses mean", "Automatically verified: the value passed the accounting checks (totals, balance sheet equality, chain of the income statement, cash flows, consistency with the following year). It is NOT a human verification. To review: a check failed or the figure was hard to read (scans). Awaiting checks: no check could test it yet. Restated: the following year's report gives another figure; the original is kept and the restated value is shown next to it."],
-    ["Missing values", "A missing value is always empty, never 0, and always has a reason: line not present in the published statement, document not collected, not applicable, value needed for a ratio missing, not stated in the document."],
-    ["Units", "Amounts are in each company's own reporting currency, as published (the downloads give them in units; the screen shows thousands). No currency conversion. Ratios are decimals in the files and percentages on screen. Text variables (audit firm, opinion, framework) are given as read."],
+    ["What is in the database", "Figures of the financial statements (balance sheet, income statement, cash flows, off-balance sheet) of Islamic financial institutions, taken from their official documents; audit, Sharia governance, governance and ESG facts read in the same documents; and the world register of Islamic banks with the progress of the collection. Every value gives its document and page. Pilot companies of other sectors (Apple from its SEC XBRL filings, SFBT from its published statements) test the method: bank-only variables are « not applicable » to them."],
+    ["Categories of institutions", "Each company belongs to one category (sector filter in step 1, column institution_type in the downloads). Figures of two categories are never added together.", [
+      "Islamic banks — full-fledged Islamic banks and Islamic subsidiaries of conventional groups: licensed banks with statements of their own. They are the banks of the world register (step 7).",
+      "Islamic windows of conventional banks — an Islamic banking business run inside a conventional bank. Only the figures of the window SECTION printed in the parent bank's statements are kept (Islamic banking annexure or note, or the window's own statements printed in the parent's report), under the scope « Islamic window » (fenetre_islamique) of step 2. The whole bank's figures are never written under a window, and a section whose total assets reach the whole bank's is refused.",
+      "Conventional parent banks — the whole bank behind each window, a separate company whose code is the window's code followed by « .CONV », in the category « Conventional banks ». Their figures are the whole bank's (consolidated or standalone), never mixed with the window's Islamic figures; Islamic variables are not applicable to them, and they are not counted among the Islamic banks. The two pages link to each other (« Islamic window of this bank » / « Parent conventional bank »).",
+      "Takaful operators (Islamic insurance) — their statements often print one column per fund (participants' fund, shareholders' fund, family takaful fund). Each fund's column is kept as printed and the funds are never added up: without a printed total column, the company-level variables are missing, with their reason. Takaful variables (contributions, wakala fee, qard hasan, surplus distributed to participants) apply to them only; a takaful window of a conventional insurer is read as a window only.",
+      "Islamic finance companies — finance and leasing companies, housing finance, microfinance, investment and development finance companies, and the modarabas of Pakistan, whose fiscal year usually ends on 30 June.",
+      "Islamic funds & REITs — Islamic funds, ETFs and real estate investment trusts: net assets, total investment income, management fee, purification of income, investment properties, distributable income. The net asset value (NAV) per unit, the distribution per unit and the units in issue are kept exactly as printed, with their decimals and unit (for example Rupees/unit, sen/unit): per-unit values are never multiplied by the scale of the page. Only total assets, total liabilities, net income, cash flows and audit facts are shared with the other categories."]],
+    ["How to build a dataset", "1. Choose companies (search by name or ticker, filter by sector and country). 2. Choose consolidated, standalone or Islamic window statements. 3. Choose years. 4. Choose variables (Guided mode: key variables; Advanced mode: all, each with a definition). 5. Check the preview: tap a value to see its document, page and original label. 6. Download Excel, CSV or a Stata do-file for your selection, or the full dataset in Excel and Stata."],
+    ["Statuses of a value", "Every value has one status (colour in the preview, column status in the downloads); tap a value to see why.", [
+      "Automatically verified (verifie_auto) — the value passed the accounting checks: totals and subtotals, balance sheet equality, chain of the income statement, cash flows, consistency with the following year's report. It is NOT a human verification.",
+      "To review (a_relire) — a check failed, or the figure was hard to read (scanned page); the failed check is given.",
+      "Pending (en_attente, « awaiting checks ») — the value was read but no check could test it yet (for example a line outside any total).",
+      "Missing (manquant) — empty, never 0, and always with a reason: line not present in the published statement, document not collected, not applicable to this category, value needed for a ratio missing, not stated in the document.",
+      "Restated — the following year's report prints another figure for the same year: the original is kept and the restated value is shown next to it, never corrected silently."]],
+    ["Three layers of data", "", [
+      "As published — every line of each statement as printed: label in its original language, column, page, scale. Never overwritten.",
+      "Checks — the accounting checks run on the as-published lines, with their result line by line (per fund for takaful operators; NAV per unit × units in issue = net assets for funds).",
+      "Standardised — the variables of the codebook (definitions in step 4), each taken from one checked line or from a printed total; this is what the site shows and the downloads give. Each value keeps its original label, document and page. The first two layers stay in the private archive."]],
+    ["How the value of a year is chosen", "", [
+      "From the first good statement of the year: every candidate document of the year is tried (financial statements first) and the first statement that is read well is kept; poorer documents are set aside with the reason.",
+      "From the comparative (« previous year ») column of the next year's report when the year's own statement fails its checks and that column passes them, or when the year's own report was not collected. The origin is said on every value.",
+      "Never from a half-year or quarterly report, and never from a multi-year summary (« five-year summary », « at a glance », pages with four or more year columns).",
+      "The year is the calendar year in which the fiscal year ends (a fiscal year ending on 30 June 2024 is 2024). Fiscal year ends are shown on each company page and a warning is given when a selection mixes them."]],
+    ["Signs and scale", "", [
+      "Expenses are negative: staff costs, operating expenses, impairment charges, tax, dividends paid… whether or not the document prints a minus sign or brackets (the sign convention is in each variable's definition). A line printed as a reversal keeps its sign.",
+      "Scale as printed: the amounts are multiplied by the scale printed on the page (units, thousands, millions) and given in units of each company's own reporting currency in the downloads; the screen shows thousands. No currency conversion.",
+      "Per-unit values of funds (NAV per unit, distribution per unit) and unit counts are never scaled: kept as printed.",
+      "Ratios are decimals in the files and percentages on screen. Text variables (audit firm, opinion, framework) are given as read."]],
+    ["Languages read", "Statements are read in English, Arabic, French, Turkish, Indonesian, Bosnian, Kazakh and Russian; original labels stay in their language. Scanned pages without a text layer are read by optical character recognition (OCR, Tesseract) in the language of the document; values read by OCR are verified only by the same accounting checks as every other value. Scanned Turkish reports are not read yet."],
+    ["Exclusions and refusals", "", [
+      "Iraq: excluded by decision of the database owner (23/10/2026): Iraqi banks are not collected, read or shown.",
+      "Iran and Syria: not registered (no verifiable official list). Afghanistan: registered, no collection until a sanctions check is done.",
+      "Robots refused: when a company's site refuses robots (robots.txt, anti-robot check page, access denied), the refusal is never bypassed. The company is listed with « ⛔ Robots refused » in front of its name and its official document links; its documents are downloaded by hand.",
+      "Official sources only: the companies' own sites and the regulators' lists; robots.txt and terms of use read, polite collection, dated proofs."]],
     ["Comparing banks", "Read the warnings above the preview: currencies, accounting frameworks (AAOIFI, IFRS, local), fiscal year ends, Islamic vs conventional banks, investment accounts presented differently, qualified audit opinions."],
     ["Text variables", "Audit, Sharia, governance and ESG variables are read with fixed rules in the text (no AI): each keeps its page and a short extract. Counts are given only when a sentence states them (never added up from lists). The SDG disclosure index (0-8) measures disclosure, not performance; its scale is version 1, to be confirmed against the specification."],
     ["Citing the data and versions", "Cite the dataset version shown at the bottom of the page (for example FATMA Research Data, version vYYYYMMDD-xxxxxx). Every version can be rebuilt exactly from the archive. Each value also gives the official document and page it comes from."],
     ["Errors and requests", "Use « Report an error or request a variable »: give the bank, the variable and the year if you can. Answers come by e-mail."],
-    ["Reference set (for the researcher)", "The page « Reference set » (link at the top) lists a fixed sample of 150 values spread over languages and statements. Type each value as printed in the document, without seeing ours; the downloaded file lets us measure the accuracy of the database by language and by family."]
+    ["Reference set (for the researcher)", "The page « Reference set » (link at the top) lists a fixed sample of 150 values spread over languages and statements. Type each value as printed in the document, without seeing ours; the downloaded file lets us measure the accuracy of the database by language and by family. Until then, the page « Data quality » shows an independent second reading of the same sample by an AI reader: it is not a human verification."]
   ];
+  // an entry: [title, paragraph, optional list of items]
   function dessinerGuide() {
     var g = $("guide-contenu"); g.textContent = "";
-    GUIDE.forEach(function (x) { g.appendChild(el("h3", { texte: x[0] })); g.appendChild(el("p", { texte: x[1] })); });
+    GUIDE.forEach(function (x) {
+      g.appendChild(el("h3", { texte: x[0] }));
+      if (x[1]) g.appendChild(el("p", { texte: x[1] }));
+      if (x[2]) g.appendChild(el("ul", { classe: "guide-liste" }, x[2].map(function (i) { return el("li", { texte: i }); })));
+    });
+  }
+
+  // ----- coverage by category of institution (page « Coverage »): counts measured when the site is built
+  function dessinerCategories() {
+    var L = D.categories || [], tab = $("categories-table"), ta = $("categories-annees");
+    tab.textContent = ""; ta.textContent = "";
+    var tr = el("tr", {}, [el("th", { classe: "fixe", texte: t("catCategorie") })]);
+    ["catInscrites", "catDocuments", "catValeurs", "catVerifiees", "catRobots"].forEach(function (k) { tr.appendChild(el("th", { texte: t(k) })); });
+    tab.appendChild(el("thead", {}, [tr]));
+    var corps = el("tbody");
+    L.forEach(function (c) {
+      corps.appendChild(el("tr", { "data-type": c.type }, [el("td", { classe: "fixe", texte: secteurPluriel(c.type) })].concat(
+        [c.inscrites, c.avec_documents, c.avec_valeurs, c.avec_verifiees, c.robots_refuses].map(function (n) { return el("td", { classe: "nombre", texte: String(n) }); }))));
+    });
+    tab.appendChild(corps);
+    var annees = D.annees_couverture || [];
+    var tr2 = el("tr", {}, [el("th", { classe: "fixe", texte: t("catCategorie") })]);
+    annees.forEach(function (a) { tr2.appendChild(el("th", { texte: String(a) })); });
+    ta.appendChild(el("thead", {}, [tr2]));
+    var corps2 = el("tbody");
+    L.forEach(function (c) {
+      corps2.appendChild(el("tr", { "data-type": c.type }, [el("td", { classe: "fixe", texte: secteurPluriel(c.type) })].concat(
+        (c.annees || []).map(function (x) { return el("td", { classe: "nombre", texte: x.verifiees + " / " + x.documents }); }))));
+    });
+    ta.appendChild(corps2);
+  }
+
+  // ----- data quality (#quality): the human reference first when present, then the independent second reading.
+  // The figures come from the build (outils/mesurer_precision.py on the published values), never written here.
+  var CAUSES = {
+    "none": "Plain case: thousands or millions, December year end, sign printed",
+    "scale:units": "Amounts printed in units (no thousands or millions)",
+    "sign:printed_without_sign": "Expense printed without minus sign or brackets",
+    "year_end:non_december": "Fiscal year not ending in December",
+    "line:discontinued_operations": "Line choice: continued vs discontinued operations",
+    "line:per_share": "Line choice: a per-share line next to the amount",
+    "line:cash_flow_subtotal": "Line choice: cash-flow subtotal before taxes or changes",
+    "line:impairment_component": "Line choice: one component of total impairment",
+    "definition:deposits_current_accounts": "Definition: current accounts vs investment accounts",
+    "definition:total_expenses_include_finance": "Definition: « total expenses » including finance costs",
+    "definition:opex_include_ecl": "Definition: operating expenses including credit losses",
+    "definition:sukuk_subordinated": "Definition: subordinated sukuk included in sukuk issued",
+    "source:half_year": "Source: a half-year report offered for the year",
+    "source:multi_year_summary": "Source: a multi-year summary page offered for the year"
+  };
+  function pourcent(a, n) { return n ? (Math.round(1000 * a / n) / 10).toFixed(1) + " %" : "—"; }
+  function tuiles(boite, liste) {
+    liste.forEach(function (x) { boite.appendChild(el("div", { classe: "tuile" }, [el("div", { classe: "chiffre", texte: String(x[0]) }), el("div", { classe: "quoi", texte: x[1] })])); });
+  }
+  function dessinerQualite() {
+    var Q = D.qualite || {}, h = $("qualite-humain"), r = $("qualite-relecture");
+    h.textContent = ""; r.textContent = "";
+    if (Q.humain) {
+      h.appendChild(el("h3", { texte: t("qHumainTitre") }));
+      h.appendChild(el("p", { classe: "aide", texte: t("qHumainAide") }));
+      var bh = el("div", { classe: "tuiles" });
+      tuiles(bh, [[Q.humain.n, t("qCompares")], [Q.humain.justes, t("qJustes")], [pourcent(Q.humain.justes, Q.humain.n), t("qTaux")],
+        [Q.humain.verifiees_fausses, t("qVerifFausses")]]);
+      h.appendChild(bh);
+    } else h.appendChild(el("p", { classe: "alerte", texte: t("qHumainAttente") }));
+    var R = Q.relecture;
+    if (!R) return;
+    var date = R.date ? R.date.split("-").reverse().join("/") : "";
+    r.appendChild(el("h3", { texte: t("qRelectureTitre").replace("{d}", date) }));
+    r.appendChild(el("p", { classe: "etiquette-ia", texte: Q.humain ? t("qEtiquetteApres") : t("qEtiquette") }));
+    r.appendChild(el("p", { classe: "aide", texte: t("qRelectureAide") }));
+    var b = el("div", { classe: "tuiles" });
+    tuiles(b, [[R.n, t("qCompares")], [R.justes, t("qJustes")], [pourcent(R.justes, R.n), t("qTaux")], [R.signe, t("qSigne")]]);
+    r.appendChild(b);
+    if (R.exclues) r.appendChild(el("p", { classe: "aide", texte: R.exclues + " " + t("qExclues") + "." }));
+    var tab = el("table", { id: "qualite-causes" });
+    var tr = el("tr", {}, [el("th", { classe: "fixe", texte: t("qCause") })]);
+    ["qN", "qOk", "qPct", "qSigneSeul"].forEach(function (k) { tr.appendChild(el("th", { texte: t(k) })); });
+    tab.appendChild(el("thead", {}, [tr]));
+    var corps = el("tbody");
+    (R.causes || []).slice().sort(function (a, b) { return b.n - a.n || (a.cause < b.cause ? -1 : 1); }).forEach(function (c) {
+      corps.appendChild(el("tr", { "data-cause": c.cause }, [el("td", { classe: "fixe", texte: CAUSES[c.cause] || c.cause }),
+        el("td", { classe: "nombre", texte: String(c.n) }), el("td", { classe: "nombre", texte: String(c.justes) }),
+        el("td", { classe: "nombre", texte: pourcent(c.justes, c.n) }), el("td", { classe: "nombre", texte: String(c.signe) })]));
+    });
+    tab.appendChild(corps);
+    r.appendChild(el("div", { classe: "tableau-cadre" }, [tab]));
+    r.appendChild(el("p", { classe: "aide", texte: "A value can be in several situations: the rows add up to more than the values compared. Files: registres/reference/" + R.fichier + (R.corrections ? " and " + R.corrections : "") + " (private repository)." }));
   }
 
   // ----- disclosure explorer: for the text / governance families, companies where each item was found, by year
@@ -952,6 +1119,8 @@
   tout();
   dessinerRegistre();
   dessinerCouverture();
+  dessinerCategories();
+  dessinerQualite();
   dessinerDivulgation();
   dessinerVersions();
   dessinerTypes();
